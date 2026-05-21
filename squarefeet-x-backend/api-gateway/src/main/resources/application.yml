@@ -1,0 +1,73 @@
+server:
+  port: 8002
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auth-service
+              uri: lb://AUTH-SERVICE
+              predicates:
+                - Path=/api/auth/**
+            - id: user-service
+              uri: lb://AUTH-SERVICE
+              predicates:
+                - Path=/api/users/**
+            - id: property-service
+              uri: lb://PROPERTY-SERVICE
+              predicates:
+                - Path=/api/properties/**
+            - id: chat-service
+              uri: lb://CHAT-SERVICE
+              predicates:
+                - Path=/api/chat/**
+            - id: manager-service
+              uri: lb://MANAGER-SERVICE
+              predicates:
+                - Path=/api/manager/**
+            - id: admin-service
+              uri: lb://ADMIN-SERVICE
+              predicates:
+                - Path=/api/admin/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://localhost:5174"
+              - "http://localhost:5175"
+              - "http://localhost:5176"
+              - "http://localhost:5177"
+              - "http://localhost:5178"
+              - "http://localhost:5179"
+              - "http://localhost:5180"
+              - "http://localhost:5181"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8001/eureka/
+
+logging:
+  level:
+    org.springframework.web.cors: DEBUG
+
+app:
+  jwt:
+    secret: SquareFeetX_Super_Secret_Key_2026_For_JWT_Token_Generation_Must_Be_Long_Enough
+  public-paths:
+    - /api/auth/login
+    - /api/auth/register
+    - /api/auth/refresh-token
+    - /api/auth/forgot-password
+    - /api/auth/reset-password/**
+    - /api/auth/google
+    - /api/properties
+    - /api/properties/**

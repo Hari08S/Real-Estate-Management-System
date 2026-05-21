@@ -1,0 +1,25 @@
+server:
+  port: 8004
+
+spring:
+  application:
+    name: property-service
+  mongodb:
+    uri: mongodb://localhost:27017/RMS
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8001/eureka/
+
+app:
+  jwt:
+    secret: SquareFeetX_Super_Secret_Key_2026_For_JWT_Token_Generation_Must_Be_Long_Enough
+  cloudinary:
+    cloud-name: squarefeetx
+    api-key: YOUR_API_KEY
+    api-secret: YOUR_API_SECRET

@@ -1,0 +1,289 @@
+@import "tailwindcss";
+/* Palette: #EBF4DD, #90AB8B, #5A7863, #3B4953 */
+@theme {
+  --color-navy-50: #EBF4DD;
+  --color-navy-100: #dcebc9;
+  --color-navy-200: #c3d9ab;
+  --color-navy-300: #a8c48d;
+  --color-navy-400: #90AB8B;
+  --color-navy-500: #7a9576;
+  --color-navy-600: #5A7863;
+  --color-navy-700: #4a6653;
+  --color-navy-800: #3B4953;
+  --color-navy-900: #2a3840;
+  --color-navy-950: #1a252c;
+
+  --color-gold-50: #fefce8;
+  --color-gold-100: #fef9c3;
+  --color-gold-200: #fef08a;
+  --color-gold-300: #fde047;
+  --color-gold-400: #f5c518;
+  --color-gold-500: #d4a00a;
+  --color-gold-600: #a37506;
+  --color-gold-700: #7a5509;
+  --color-gold-800: #654410;
+  --color-gold-900: #553813;
+  --color-gold-950: #321c07;
+
+  --color-royal-50: #EBF4DD;
+  --color-royal-100: #d8e8c4;
+  --color-royal-200: #c0d6a6;
+  --color-royal-300: #a8c48d;
+  --color-royal-400: #90AB8B;
+  --color-royal-500: #5A7863;
+  --color-royal-600: #4d6855;
+  --color-royal-700: #3f5746;
+  --color-royal-800: #3B4953;
+  --color-royal-900: #2d3a40;
+  --color-royal-950: #1e282e;
+
+  --color-surface-dark: #1a1f24;
+  --color-surface-card: #222a30;
+  --color-surface-hover: #2d363d;
+  --color-surface-border: #3B4953;
+  --color-surface-light: #EBF4DD;
+
+  /* Semantic text colors (default = dark mode) */
+  --color-text-primary: #EBF4DD;
+  --color-text-secondary: #90AB8B;
+  --color-text-muted: #6b8a70;
+
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+/* ===== Light Mode Overrides ===== */
+.light {
+  --color-surface-dark: #f5f8f0;
+  --color-surface-card: #ffffff;
+  --color-surface-hover: #EBF4DD;
+  --color-surface-border: #c3d9ab;
+  --color-text-primary: #1a252c;
+  --color-text-secondary: #3B4953;
+  --color-text-muted: #6b8a70;
+}
+
+/* ===== Global Base Styles ===== */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-surface-dark);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ===== Custom Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-royal-700);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-royal-500);
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ===== Animations ===== */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(90, 120, 99, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(90, 120, 99, 0.6);
+  }
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.08) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-glow {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-flow 6s ease infinite;
+}
+
+/* ===== Glass Card Utility ===== */
+.glass-card {
+  background: var(--color-surface-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 16px;
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(90, 120, 99, 0.5);
+  box-shadow: 0 8px 32px rgba(90, 120, 99, 0.15);
+}
+
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--color-surface-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.light .glass-card-hover:hover {
+  border-color: rgba(90, 120, 99, 0.4);
+  box-shadow: 0 8px 32px rgba(90, 120, 99, 0.08);
+}
+
+/* ===== Gradient Text ===== */
+.text-gradient {
+  background: linear-gradient(135deg, #90AB8B, #EBF4DD, #d4a00a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.light .text-gradient {
+  background: linear-gradient(135deg, #3B4953, #5A7863, #a37506);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-royal {
+  background: linear-gradient(135deg, #5A7863, #90AB8B, #EBF4DD);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.light .text-gradient-royal {
+  background: linear-gradient(135deg, #3B4953, #5A7863, #90AB8B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Page Layout Utilities ===== */
+.page-container {
+  width: 100%;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .page-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-container {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .page-container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+.section-padding {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
+}
+
+/* ===== Theme Transition ===== */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.glass-card,
+.glass-card-hover {
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}

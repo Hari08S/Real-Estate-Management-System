@@ -1,0 +1,233 @@
+package com.squarefeetx.auth.service;
+
+import com.squarefeetx.auth.dto.AuthDto;
+import com.squarefeetx.auth.dto.UserResponse;
+import com.squarefeetx.auth.entity.User;
+import com.squarefeetx.auth.repository.UserRepository;
+import com.squarefeetx.auth.security.JwtUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final EmailService emailService;
+
+    public UserResponse register(AuthDto.RegisterRequest req) {
+        if (userRepository.existsByEmail(req.getEmail())) {
+            throw new RuntimeException("Email already registered");
+        }
+
+        User user = User.builder()
+                .name(req.getName())
+                .email(req.getEmail())
+                .phone(req.getPhone())
+                .passwordHash(passwordEncoder.encode(req.getPassword()))
+                .rawPassword(req.getPassword())
+                .activeRole("BUYER")
+                .roles(List.of("BUYER", "SELLER", "RENTAL_OWNER", "RENTAL_SEEKER"))
+                .build();
+
+        userRepository.save(user);
+        return toResponse(user);
+    }
+
+    public UserResponse googleLogin(AuthDto.GoogleAuthRequest req, HttpServletResponse response) {
+        User user = userRepository.findByEmail(req.getEmail()).orElse(null);
+        if (user == null) {
+            String randomPass = "GoogleAuth_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+            user = User.builder()
+                    .name(req.getName())
+                    .email(req.getEmail())
+                    .phone("Google User")
+                    .passwordHash(passwordEncoder.encode(randomPass))
+                    .rawPassword(randomPass)
+                    .activeRole("BUYER")
+                    .roles(List.of("BUYER", "SELLER", "RENTAL_OWNER", "RENTAL_SEEKER"))
+                    .build();
+            user = userRepository.save(user);
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getActiveRole());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        setTokenCookies(response, accessToken, refreshToken);
+        return toResponse(user);
+    }
+
+    public UserResponse login(AuthDto.LoginRequest req, HttpServletResponse response) {
+        User user = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getActiveRole());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        ensureStandardRoles(user);
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        setTokenCookies(response, accessToken, refreshToken);
+        return toResponse(user);
+    }
+
+    public void logout(HttpServletResponse response, String userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setRefreshToken(null);
+            userRepository.save(user);
+        });
+        clearTokenCookies(response);
+    }
+
+    public UserResponse getMe(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        ensureStandardRoles(user);
+        return toResponse(user);
+    }
+
+    private void ensureStandardRoles(User user) {
+        boolean updated = false;
+        List<String> mutableRoles = new ArrayList<>(user.getRoles() != null ? user.getRoles() : new ArrayList<>());
+        if (mutableRoles.contains("BUYER") || mutableRoles.contains("SELLER")) {
+            if (!mutableRoles.contains("BUYER")) { mutableRoles.add("BUYER"); updated = true; }
+            if (!mutableRoles.contains("SELLER")) { mutableRoles.add("SELLER"); updated = true; }
+            if (!mutableRoles.contains("RENTAL_OWNER")) { mutableRoles.add("RENTAL_OWNER"); updated = true; }
+            if (!mutableRoles.contains("RENTAL_SEEKER")) { mutableRoles.add("RENTAL_SEEKER"); updated = true; }
+        }
+        if (updated) {
+            user.setRoles(mutableRoles);
+            userRepository.save(user);
+        }
+    }
+
+    public String forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        userRepository.save(user);
+
+        String resetLink = "http://localhost:5173/reset-password/" + token;
+        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+        return token;
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+
+        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Reset token has expired");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setRawPassword(newPassword);
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+    }
+
+    public UserResponse refreshToken(String refreshTokenValue, HttpServletResponse response) {
+        if (refreshTokenValue == null || !jwtUtil.isTokenValid(refreshTokenValue)) {
+            throw new RuntimeException("Invalid refresh token");
+        }
+
+        String userId = jwtUtil.getUserIdFromToken(refreshTokenValue);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!refreshTokenValue.equals(user.getRefreshToken())) {
+            throw new RuntimeException("Refresh token mismatch");
+        }
+
+        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getActiveRole());
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        user.setRefreshToken(newRefreshToken);
+        userRepository.save(user);
+
+        setTokenCookies(response, newAccessToken, newRefreshToken);
+        return toResponse(user);
+    }
+
+    private void setTokenCookies(HttpServletResponse response, String accessToken, String refreshToken) {
+        Cookie accessCookie = new Cookie("accessToken", accessToken);
+        accessCookie.setHttpOnly(true);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge((int) (jwtUtil.getAccessTokenExpiry() / 1000));
+        response.addCookie(accessCookie);
+
+        Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/api/auth/refresh-token");
+        refreshCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpiry() / 1000));
+        response.addCookie(refreshCookie);
+    }
+
+    private void clearTokenCookies(HttpServletResponse response) {
+        Cookie accessCookie = new Cookie("accessToken", "");
+        accessCookie.setHttpOnly(true);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(0);
+        response.addCookie(accessCookie);
+
+        Cookie refreshCookie = new Cookie("refreshToken", "");
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/api/auth/refresh-token");
+        refreshCookie.setMaxAge(0);
+        response.addCookie(refreshCookie);
+    }
+
+    /**
+     * Issues fresh JWT access + refresh tokens for the given user and role.
+     * Called after switchRole so the browser immediately gets cookies with the new activeRole.
+     */
+    public void issueNewTokens(String userId, String activeRole, HttpServletResponse response) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), activeRole);
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        user.setRefreshToken(newRefreshToken);
+        userRepository.save(user);
+
+        setTokenCookies(response, newAccessToken, newRefreshToken);
+    }
+
+    public static UserResponse toResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .activeRole(user.getActiveRole())
+                .roles(user.getRoles())
+                .avatar(user.getAvatarUrl())
+                .cities(user.getCities())
+                .createdAt(user.getCreatedAt())
+                .rawPassword(user.getRawPassword())
+                .build();
+    }
+}

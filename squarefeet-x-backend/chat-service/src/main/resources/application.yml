@@ -1,0 +1,19 @@
+server:
+  port: 8005
+
+spring:
+  application:
+    name: chat-service
+  mongodb:
+    uri: mongodb://localhost:27017/RMS
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8001/eureka/
+
+app:
+  jwt:
+    secret: SquareFeetX_Super_Secret_Key_2026_For_JWT_Token_Generation_Must_Be_Long_Enough
+  services:
+    auth-url: http://localhost:8003
