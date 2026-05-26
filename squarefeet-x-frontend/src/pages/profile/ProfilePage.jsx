@@ -56,7 +56,7 @@ const ProfilePage = () => {
 
     const switchableRoles = (user?.activeRole === 'ADMIN' || user?.activeRole === 'MANAGER')
         ? []
-        : (user?.roles?.filter((r) => r !== user.activeRole) || []);
+        : (user?.roles?.filter((r) => r !== user.activeRole && r !== 'MANAGER' && r !== 'ADMIN') || []);
 
     return (
         <>

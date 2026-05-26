@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { Search, SlidersHorizontal, X, MapPin, Grid3X3, LayoutList, Clock, Bell, Trash2 } from 'lucide-react';
 import { useFilterStore } from '../../store/filterStore';
+import toast from 'react-hot-toast';
 import { useCompareStore } from '../../store/compareStore';
 import { useSearchHistoryStore } from '../../store/searchHistoryStore';
 import { useAlertPreferencesStore } from '../../store/alertPreferencesStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { propertyService } from '../../services/api';
 import { useAuth, useDebouncedCallback, useIntersectionObserver } from '../../hooks';
 import { ROLES, PROPERTY_TYPES, LISTING_TYPES } from '../../constants';
@@ -42,7 +44,13 @@ const BrowsePropertiesPage = () => {
     const { data, isLoading, isFetching } = useQuery({
         queryKey: ['properties', filters, page, roleListingFilter],
         queryFn: () => {
-            const queryParams = { ...filters, page, limit: 12 };
+            const queryParams = { 
+                ...filters, 
+                minPrice: filters.priceMin,
+                maxPrice: filters.priceMax,
+                page, 
+                limit: 12 
+            };
             if (roleListingFilter) {
                 queryParams.listingType = roleListingFilter;
             }
@@ -59,6 +67,33 @@ const BrowsePropertiesPage = () => {
 
     const properties = data?.properties || [];
     const totalPages = data?.totalPages || 1;
+
+    useEffect(() => {
+        if (properties.length > 0) {
+            const matchesAnyPreference = useAlertPreferencesStore.getState().matchesAnyPreference;
+            const addNotification = useNotificationStore.getState().addNotification;
+            const notifications = useNotificationStore.getState().notifications;
+            
+            properties.forEach((property) => {
+                if (matchesAnyPreference(property)) {
+                    const alreadyNotified = notifications.some(
+                        (n) => n.id === `alert-${property.id}`
+                    );
+                    if (!alreadyNotified) {
+                        addNotification({
+                            id: `alert-${property.id}`,
+                            title: 'New Matching Listing!',
+                            message: `A property matches your active alerts: ${property.title} in ${property.location?.city || ''}.`,
+                            link: `/properties/${property.id}`,
+                            createdAt: Date.now(),
+                            read: false
+                        });
+                        toast.success(`New property alert: ${property.title}!`, { icon: '🔔' });
+                    }
+                }
+            });
+        }
+    }, [properties]);
 
     const debouncedSearch = useDebouncedCallback((value) => {
         if (value.trim()) addSearch(value.trim(), filters);
@@ -265,6 +300,58 @@ const BrowsePropertiesPage = () => {
                                                 icon={MapPin}
                                                 value={filters.city}
                                                 onChange={(e) => { setFilter('city', e.target.value); setPage(1); }}
+                                            />
+                                            <Select
+                                                placeholder="Furnishing"
+                                                options={[
+                                                    { value: 'FURNISHED', label: 'Furnished' },
+                                                    { value: 'SEMI_FURNISHED', label: 'Semi-Furnished' },
+                                                    { value: 'UNFURNISHED', label: 'Unfurnished' }
+                                                ]}
+                                                value={filters.furnishing}
+                                                onChange={(e) => { setFilter('furnishing', e.target.value); setPage(1); }}
+                                            />
+                                            <Select
+                                                placeholder="RERA Approved"
+                                                options={[
+                                                    { value: 'APPROVED', label: 'RERA Approved' },
+                                                    { value: 'PENDING', label: 'RERA Pending' }
+                                                ]}
+                                                value={filters.reraStatus}
+                                                onChange={(e) => { setFilter('reraStatus', e.target.value); setPage(1); }}
+                                            />
+                                            <Select
+                                                placeholder="Floor"
+                                                options={[
+                                                    { value: 'GROUND', label: 'Ground Floor' },
+                                                    { value: 'LOW', label: 'Low Floor' },
+                                                    { value: 'MEDIUM', label: 'Medium Floor' },
+                                                    { value: 'HIGH', label: 'High Floor' }
+                                                ]}
+                                                value={filters.floor}
+                                                onChange={(e) => { setFilter('floor', e.target.value); setPage(1); }}
+                                            />
+                                            <Select
+                                                placeholder="Distance Radius"
+                                                options={[
+                                                    { value: '2', label: 'Within 2 km' },
+                                                    { value: '5', label: 'Within 5 km' },
+                                                    { value: '10', label: 'Within 10 km' },
+                                                    { value: '20', label: 'Within 20 km' }
+                                                ]}
+                                                value={filters.distance}
+                                                onChange={(e) => {
+                                                    const dist = e.target.value;
+                                                    setFilter('distance', dist);
+                                                    if (dist) {
+                                                        setFilter('pinnedLat', '17.3850');
+                                                        setFilter('pinnedLng', '78.4867');
+                                                    } else {
+                                                        setFilter('pinnedLat', '');
+                                                        setFilter('pinnedLng', '');
+                                                    }
+                                                    setPage(1);
+                                                }}
                                             />
                                         </div>
                                     </div>

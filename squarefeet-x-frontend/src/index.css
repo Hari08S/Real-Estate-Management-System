@@ -61,6 +61,24 @@
   --color-text-primary: #1a252c;
   --color-text-secondary: #3B4953;
   --color-text-muted: #6b8a70;
+
+  /* High-contrast and readable highlights for light-theme backgrounds */
+  --color-royal-300: #3f5746;
+  --color-royal-400: #4a6653;
+  --color-royal-500: #3b4d40;
+
+  --color-gold-300: #8c5d07;
+  --color-gold-400: #a37506;
+  --color-gold-500: #7a5509;
+
+  --color-emerald-400: #059669;
+  --color-emerald-500: #047857;
+
+  --color-red-400: #dc2626;
+  --color-red-500: #b91c1c;
+
+  --color-amber-400: #d97706;
+  --color-amber-500: #b45309;
 }
 
 /* ===== Global Base Styles ===== */

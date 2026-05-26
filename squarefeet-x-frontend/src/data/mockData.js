@@ -451,101 +451,82 @@ export const MOCK_PROPERTIES = [
     },
 ];
 
+// Real user IDs for reference:
+// Mani (Seller):        '7a55e975-edde-4597-b98a-9ff567834966'
+// Naveen (Rental Owner): '38c0eda3-13e3-44a4-a763-efba53b3aa08'
+// Stylish Hari (Seller): 'u_stylish'
+// Hari Kumar (Buyer, old): 'u1'
 export const MOCK_CONVERSATIONS = [
     {
         id: 'conv1',
         creatorId: 'u1',
-        otherUser: { id: 'u2', name: 'Priya Sharma' },
-        propertyTitle: 'Luxury 3BHK in Banjara Hills',
-        propertyId: 'p1',
-        lastMessage: 'Sure! How about Saturday 10 AM?',
+        otherUser: { id: '7a55e975-edde-4597-b98a-9ff567834966', name: 'Mani' },
+        propertyTitle: 'Modern Villa with Garden in Jubilee Hills',
+        propertyId: 'p2',
+        lastMessage: 'Is the price negotiable?',
         lastMessageAt: '2026-02-22T16:00:00Z',
-        unreadCounts: { u1: 1 },
+        // Mani has 1 unread — will show badge when Mani is logged in
+        unreadCounts: { '7a55e975-edde-4597-b98a-9ff567834966': 1 },
     },
     {
         id: 'conv2',
         creatorId: 'u1',
-        otherUser: { id: 'u3', name: 'Ravi Menon' },
-        propertyTitle: 'Modern Villa in Jubilee Hills',
-        propertyId: 'p2',
-        lastMessage: 'Your listing has been approved!',
-        lastMessageAt: '2026-02-21T10:00:00Z',
-        unreadCounts: {},
+        otherUser: { id: '7a55e975-edde-4597-b98a-9ff567834966', name: 'Mani' },
+        propertyTitle: 'Premium Penthouse in Madhapur',
+        propertyId: 'p4',
+        lastMessage: 'Hi, I am interested in the penthouse.',
+        lastMessageAt: '2026-03-05T11:00:00Z',
+        // Mani has 2 unread
+        unreadCounts: { '7a55e975-edde-4597-b98a-9ff567834966': 2 },
     },
     {
         id: 'conv3',
-        creatorId: 'u1',
-        otherUser: { id: 'u5', name: 'Deepika Reddy' },
-        propertyTitle: 'Studio Apartment in Indiranagar',
-        propertyId: 'p11',
-        lastMessage: 'Documents verification is complete. Listing is now live!',
-        lastMessageAt: '2026-03-02T14:30:00Z',
-        unreadCounts: { u1: 2 },
-    },
-    {
-        id: 'conv4',
-        creatorId: 'u2',
-        otherUser: { id: 'u1', name: 'Hari Kumar' },
-        propertyTitle: 'Premium Penthouse in Madhapur',
-        propertyId: 'p4',
-        lastMessage: 'Is the price negotiable?',
-        lastMessageAt: '2026-03-05T11:00:00Z',
-        unreadCounts: { u1: 1 },
-    },
-    {
-        id: 'conv5',
-        creatorId: 'u_stylish',
-        otherUser: { id: 'u3', name: 'Ravi Menon' },
-        propertyTitle: 'Luxury 3BHK in Banjara Hills',
-        propertyId: 'p1',
-        lastMessage: 'Your listing is live on the marketplace.',
-        lastMessageAt: '2026-03-21T09:00:00Z',
-        unreadCounts: {},
-    },
-    {
-        id: 'conv6',
         creatorId: 'u_stylish',
         otherUser: { id: 'u1', name: 'Hari Kumar' },
         propertyTitle: '2BHK Apartment in Chennai T Nagar',
         propertyId: 'p14',
         lastMessage: 'Is site visit possible this week?',
         lastMessageAt: '2026-03-22T14:00:00Z',
-        unreadCounts: { u_stylish: 1 },
+        unreadCounts: { 'u_stylish': 1 },
+    },
+    {
+        id: 'conv4',
+        creatorId: 'u1',
+        otherUser: { id: '38c0eda3-13e3-44a4-a763-efba53b3aa08', name: 'Naveen' },
+        propertyTitle: 'Cozy 2BHK for Rent in Gachibowli',
+        propertyId: 'p3',
+        lastMessage: 'Documents verification is complete.',
+        lastMessageAt: '2026-03-02T14:30:00Z',
+        unreadCounts: {},
     },
 ];
 
 export const MOCK_MESSAGES = {
+    // conv1: Buyer (u1/Hari Kumar) → Mani (seller) about Villa in Jubilee Hills
     conv1: [
-        { id: 'm1', content: 'Hi, I am interested in your 3BHK in Banjara Hills.', senderId: 'u1', createdAt: '2026-02-22T15:00:00Z' },
-        { id: 'm2', content: 'Sure! The property is available for viewing. When would you like to visit?', senderId: 'u2', createdAt: '2026-02-22T15:10:00Z' },
+        { id: 'm1', content: 'Hi, I am interested in the Modern Villa in Jubilee Hills.', senderId: 'u1', createdAt: '2026-02-22T15:00:00Z' },
+        { id: 'm2', content: 'Sure! The property is available for viewing. When would you like to visit?', senderId: '7a55e975-edde-4597-b98a-9ff567834966', createdAt: '2026-02-22T15:10:00Z' },
         { id: 'm3', content: 'Can we schedule a visit this weekend?', senderId: 'u1', createdAt: '2026-02-22T15:30:00Z' },
-        { id: 'm4', content: 'Sure! How about Saturday 10 AM?', senderId: 'u2', createdAt: '2026-02-22T16:00:00Z' },
+        { id: 'm4', content: 'Is the price negotiable?', senderId: 'u1', createdAt: '2026-02-22T16:00:00Z' },
     ],
+    // conv2: Buyer (u1) → Mani about Premium Penthouse
     conv2: [
-        { id: 'm5', content: 'Your listing has been submitted for review.', senderId: 'u3', createdAt: '2026-02-20T09:00:00Z' },
-        { id: 'm6', content: 'I have verified the property documents. Everything looks good.', senderId: 'u3', createdAt: '2026-02-21T09:30:00Z' },
-        { id: 'm7', content: 'Your listing has been approved!', senderId: 'u3', createdAt: '2026-02-21T10:00:00Z' },
+        { id: 'm5', content: 'Hi, I am interested in the penthouse.', senderId: 'u1', createdAt: '2026-03-05T10:00:00Z' },
+        { id: 'm6', content: 'Great choice! It features panoramic city views.', senderId: '7a55e975-edde-4597-b98a-9ff567834966', createdAt: '2026-03-05T10:30:00Z' },
+        { id: 'm7', content: 'Can I schedule a site visit?', senderId: 'u1', createdAt: '2026-03-05T10:45:00Z' },
+        { id: 'm8', content: 'Hi, I am interested in the penthouse.', senderId: 'u1', createdAt: '2026-03-05T11:00:00Z' },
     ],
+    // conv3: Buyer (u1) → Stylish Hari about Chennai apartment
     conv3: [
-        { id: 'm8', content: 'Hi, I submitted my studio apartment listing yesterday.', senderId: 'u2', createdAt: '2026-03-01T10:00:00Z' },
-        { id: 'm9', content: 'Yes, I can see it. Let me verify the photos and documents.', senderId: 'u5', createdAt: '2026-03-01T11:00:00Z' },
-        { id: 'm10', content: 'Could you upload the society NOC as well?', senderId: 'u5', createdAt: '2026-03-01T14:00:00Z' },
-        { id: 'm11', content: 'Done! I just uploaded it.', senderId: 'u2', createdAt: '2026-03-02T09:00:00Z' },
-        { id: 'm12', content: 'Documents verification is complete. Listing is now live!', senderId: 'u5', createdAt: '2026-03-02T14:30:00Z' },
+        { id: 'm9', content: 'Hello, I am interested in your Chennai property.', senderId: 'u1', createdAt: '2026-03-22T13:00:00Z' },
+        { id: 'm10', content: 'Thanks! Happy to arrange a visit.', senderId: 'u_stylish', createdAt: '2026-03-22T13:30:00Z' },
+        { id: 'm11', content: 'Is site visit possible this week?', senderId: 'u1', createdAt: '2026-03-22T14:00:00Z' },
     ],
+    // conv4: Buyer (u1) → Naveen about rental
     conv4: [
-        { id: 'm13', content: 'Hi, I saw the penthouse listing. Looks amazing!', senderId: 'u1', createdAt: '2026-03-05T10:00:00Z' },
-        { id: 'm14', content: 'Thank you! It has premium finishes throughout.', senderId: 'u2', createdAt: '2026-03-05T10:30:00Z' },
-        { id: 'm15', content: 'Is the price negotiable?', senderId: 'u1', createdAt: '2026-03-05T11:00:00Z' },
-    ],
-    conv5: [
-        { id: 'm16', content: 'Hi, I submitted my Banjara Hills listing for review.', senderId: 'u_stylish', createdAt: '2026-03-20T10:00:00Z' },
-        { id: 'm17', content: 'Documents verified. Your listing is live on the marketplace.', senderId: 'u3', createdAt: '2026-03-21T09:00:00Z' },
-    ],
-    conv6: [
-        { id: 'm18', content: 'Hello, I am interested in your Chennai property.', senderId: 'u1', createdAt: '2026-03-22T13:00:00Z' },
-        { id: 'm19', content: 'Thanks! Happy to arrange a visit.', senderId: 'u_stylish', createdAt: '2026-03-22T13:30:00Z' },
-        { id: 'm20', content: 'Is site visit possible this week?', senderId: 'u1', createdAt: '2026-03-22T14:00:00Z' },
+        { id: 'm12', content: 'Hi, I am looking for a 2BHK in Gachibowli.', senderId: 'u1', createdAt: '2026-03-01T10:00:00Z' },
+        { id: 'm13', content: 'We have a great option! Let me share details.', senderId: '38c0eda3-13e3-44a4-a763-efba53b3aa08', createdAt: '2026-03-01T11:00:00Z' },
+        { id: 'm14', content: 'Documents verification is complete.', senderId: '38c0eda3-13e3-44a4-a763-efba53b3aa08', createdAt: '2026-03-02T14:30:00Z' },
     ],
 };
 

@@ -85,12 +85,13 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody AuthDto.ForgotPasswordRequest req) {
         try {
-            String token = authService.forgotPassword(req.getEmail());
-            String resetLink = "http://localhost:5173/reset-password/" + token;
+            String otp = authService.forgotPassword(req.getEmail());
+            String resetLink = "http://localhost:5173/reset-password/" + otp;
             return ResponseEntity.ok(Map.of(
-                "message", "Reset link sent to email",
-                "resetLink", resetLink,
-                "token", token
+                "message", "Reset OTP sent to email",
+                "otp", otp,
+                "token", otp,
+                "resetLink", resetLink
             ));
         } catch (Exception e) {
             return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));

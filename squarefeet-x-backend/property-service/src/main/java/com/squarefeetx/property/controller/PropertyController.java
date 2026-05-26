@@ -73,10 +73,24 @@ public class PropertyController {
         return ResponseEntity.ok(propertyService.getMyListings(userId));
     }
 
-    @PostMapping("/{id}/images")
-    public ResponseEntity<?> uploadImages(@PathVariable String id) {
-        // Task: Cloudinary upload
-        return ResponseEntity.ok(Map.of("message", "Images uploaded"));
+    @PostMapping("/{id}/unlock")
+    public ResponseEntity<?> incrementUnlockCount(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(propertyService.incrementUnlockCount(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/reviews")
+    public ResponseEntity<?> addReview(@PathVariable String id, @RequestBody Property.Review review) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String buyerName = review.getBuyerName() != null ? review.getBuyerName() : "Verified Buyer";
+        try {
+            return ResponseEntity.ok(propertyService.addReview(id, review, userId, buyerName));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
+        }
     }
 
     // ── Internal endpoints for Manager/Admin services ──

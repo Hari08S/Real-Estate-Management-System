@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
     LayoutDashboard, List, PlusCircle, MessageSquare, Users,
     Shield, ChevronLeft, ChevronRight, Building2,
@@ -11,6 +11,8 @@ import { useCompareStore } from '../../store/compareStore';
 import { ROLES, ROLE_LABELS } from '../../constants';
 import Navbar from './Navbar';
 import Badge from '../ui/Badge';
+import { useQuery } from '@tanstack/react-query';
+import { chatService } from '../../services/api';
 
 const sidebarMenus = {
     [ROLES.BUYER]: [
@@ -66,6 +68,39 @@ const DashboardLayout = () => {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [location.pathname]);
+    
+    // Subscribe to the same ['conversations'] cache used by ChatPage & Navbar
+    const { data: convData } = useQuery({
+        queryKey: ['conversations'],
+        queryFn: () => chatService.getConversations().then((r) => r.data),
+        enabled: isAuthenticated,
+        refetchInterval: 3000,
+        refetchOnWindowFocus: true,
+        staleTime: 0,
+    });
+    const isChatPage = location.pathname.includes('/chat');
+    const rawConversations = convData?.conversations || [];
+    const groupedConvsMap = new Map();
+    for (const conv of rawConversations) {
+        const otherId = conv.otherUserId || conv.otherUser?.id;
+        if (!otherId) continue;
+        if (!groupedConvsMap.has(otherId)) {
+            groupedConvsMap.set(otherId, {
+                ...conv,
+                ids: [conv.id],
+                unreadCount: conv.unreadCount || 0
+            });
+        } else {
+            const existing = groupedConvsMap.get(otherId);
+            if (!existing.ids.includes(conv.id)) {
+                existing.ids.push(conv.id);
+            }
+            existing.unreadCount += (conv.unreadCount || 0);
+        }
+    }
+    const conversations = Array.from(groupedConvsMap.values());
+    const chatUnreadCount = isChatPage ? 0 : conversations.reduce((s, c) => s + (c.unreadCount || 0), 0);
+
     const compareItems = useCompareStore((s) => s.items);
     const clearCompare = useCompareStore((s) => s.clearAll);
     const menu = sidebarMenus[user?.activeRole] || [];
@@ -99,13 +134,20 @@ const DashboardLayout = () => {
                                             key={item.to}
                                             to={item.to}
                                             title={collapsed ? item.label : undefined}
-                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
+                                            className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
                                                 ? 'bg-royal-500/15 text-royal-400 shadow-sm shadow-royal-500/10'
                                                 : 'text-gray-400 hover:text-white hover:bg-surface-hover'
                                                 } ${collapsed ? 'justify-center' : ''}`}
                                         >
                                             <item.icon className="w-5 h-5 shrink-0" />
                                             {!collapsed && <span>{item.label}</span>}
+                                            {item.label === 'Messages' && chatUnreadCount > 0 && (
+                                                <span className={`absolute bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse ${
+                                                    collapsed ? '-top-1 -right-1 w-5 h-5' : 'right-3 w-5 h-5'
+                                                }`}>
+                                                    {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+                                                </span>
+                                            )}
                                         </Link>
                                     );
                                 })}

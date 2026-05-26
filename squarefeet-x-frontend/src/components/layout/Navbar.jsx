@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import {
     Menu, X, ChevronDown, Home, Search, Building2, LogIn, UserPlus,
     LayoutDashboard, Heart, Unlock, MessageSquare, PlusCircle, List,
-    Users, Settings, Shield, Bell, LogOut, ArrowRightLeft, Sun, Moon
+    Users, Settings, Shield, Bell, LogOut, ArrowRightLeft, Sun, Moon, MapPin
 } from 'lucide-react';
 import { useAuth, useLogout } from '../../hooks';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -30,6 +30,7 @@ const roleMenus = {
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { to: '/properties', label: 'Browse', icon: Search },
         { to: '/buyer/favorites', label: 'Favorites', icon: Heart },
+        { to: '/buyer/route-map', label: 'Route Planner', icon: MapPin },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.SELLER]: [
@@ -48,6 +49,7 @@ const roleMenus = {
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { to: '/properties', label: 'Browse', icon: Search },
         { to: '/buyer/favorites', label: 'Favorites', icon: Heart },
+        { to: '/buyer/route-map', label: 'Route Planner', icon: MapPin },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.MANAGER]: [
@@ -82,23 +84,28 @@ const Navbar = () => {
     const profileRef = useRef(null);
     const roleRef = useRef(null);
     const notificationRef = useRef(null);
-    
+
+    // ── Primary: subscribe to the same ['conversations'] key that ChatPage writes to.
+    // This means any send/markRead in ChatPage immediately reflects here.
+    const { data: convData } = useQuery({
+        queryKey: ['conversations'],
+        queryFn: () => chatService.getConversations().then((r) => r.data),
+        enabled: isAuthenticated,
+        refetchInterval: 3000,
+        refetchOnWindowFocus: true,
+        staleTime: 0,
+    });
+    const conversations = convData?.conversations || [];
+
+    // ── Secondary: dedicated unread-count endpoint as a fallback / cross-check
     const { data: unreadData } = useQuery({
         queryKey: ['unread-count'],
         queryFn: () => chatService.getUnreadCount().then((r) => r.data),
         enabled: isAuthenticated,
-        refetchInterval: 2000,
-        staleTime: 500,
+        refetchInterval: 3000,
+        refetchOnWindowFocus: true,
+        staleTime: 0,
     });
-    
-    const { data: convData } = useQuery({
-        queryKey: ['navbar-conversations'],
-        queryFn: () => chatService.getConversations().then((r) => r.data),
-        enabled: isAuthenticated,
-        refetchInterval: 2000,
-        staleTime: 500,
-    });
-    const conversations = convData?.conversations || [];
 
     const getChatLink = (role) => {
         if (!role) return '/buyer/chat';
@@ -111,6 +118,13 @@ const Navbar = () => {
     };
 
     const isChatPage = location.pathname.includes('/chat');
+
+    // Derive unread count from conversations cache (primary) with API count as fallback
+    const convUnreadCount = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    const apiUnreadCount = unreadData?.count || 0;
+    // Use the larger of the two to avoid momentary zeroing from race conditions
+    const chatUnreadCount = isChatPage ? 0 : Math.max(convUnreadCount, apiUnreadCount);
+
     const chatNotifications = isChatPage
         ? []
         : conversations
@@ -122,13 +136,12 @@ const Navbar = () => {
                 isChat: true,
                 link: getChatLink(user?.activeRole)
             }));
-    
+
     const notificationUnreadCount = useNotificationStore((s) => s.unreadCount);
-    const chatUnreadCount = unreadData?.count || 0;
     const totalUnreadCount = notificationUnreadCount + chatUnreadCount;
-    
+
     const allNotifications = [...notifications, ...chatNotifications];
-    
+
     const setUser = useAuthStore((s) => s.setUser);
     const { theme, toggleTheme } = useThemeStore();
 
@@ -151,8 +164,8 @@ const Navbar = () => {
                 setNotificationOpen(false);
             }
         };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        document.addEventListener('click', handleClick, true);
+        return () => document.removeEventListener('click', handleClick, true);
     }, []);
 
     const handleSwitchRole = async (role) => {
@@ -173,7 +186,7 @@ const Navbar = () => {
 
     const switchableRoles = (user?.activeRole === 'ADMIN' || user?.activeRole === 'MANAGER')
         ? []
-        : (user?.roles?.filter((r) => r !== user.activeRole) || []);
+        : (user?.roles?.filter((r) => r !== user.activeRole && r !== 'MANAGER' && r !== 'ADMIN') || []);
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-40 bg-surface-dark/80 backdrop-blur-xl border-b border-surface-border">
@@ -301,20 +314,15 @@ const Navbar = () => {
                                                         onClick={async () => {
                                                             clearAll();
                                                             setUnreadCount(0);
-                                                             // Optimistically zero out unread in cache
-                                                             queryClient.setQueryData(['unread-count'], { count: 0 });
-                                                             queryClient.setQueryData(['navbar-conversations'], (old) => {
-                                                                 if (!old?.conversations) return old;
-                                                                 return { conversations: old.conversations.map(c => ({ ...c, unreadCount: 0 })) };
-                                                             });
-                                                             queryClient.setQueryData(['conversations'], (old) => {
-                                                                 if (!old?.conversations) return old;
-                                                                 return { conversations: old.conversations.map(c => ({ ...c, unreadCount: 0 })) };
-                                                             });
+                                                            // Optimistically zero out unread in shared cache
+                                                            queryClient.setQueryData(['unread-count'], { count: 0 });
+                                                            queryClient.setQueryData(['conversations'], (old) => {
+                                                                if (!old?.conversations) return old;
+                                                                return { conversations: old.conversations.map(c => ({ ...c, unreadCount: 0 })) };
+                                                            });
                                                             try {
                                                                 const unreadChats = conversations.filter(c => c.unreadCount > 0);
                                                                 await Promise.all(unreadChats.map(c => chatService.markRead(c.id)));
-                                                                queryClient.invalidateQueries({ queryKey: ['navbar-conversations'] });
                                                                 queryClient.invalidateQueries({ queryKey: ['conversations'] });
                                                                 queryClient.invalidateQueries({ queryKey: ['unread-count'] });
                                                             } catch (err) {
@@ -337,7 +345,6 @@ const Navbar = () => {
                                                                     try {
                                                                         const convId = n.id.replace('chat-', '');
                                                                         await chatService.markRead(convId);
-                                                                        queryClient.invalidateQueries({ queryKey: ['navbar-conversations'] });
                                                                         queryClient.invalidateQueries({ queryKey: ['conversations'] });
                                                                         queryClient.invalidateQueries({ queryKey: ['unread-count'] });
                                                                     } catch (err) {

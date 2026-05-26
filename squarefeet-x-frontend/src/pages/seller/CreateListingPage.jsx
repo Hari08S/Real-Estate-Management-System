@@ -22,7 +22,7 @@ import toast from 'react-hot-toast';
 import { filesToDataUrls } from '../../utils/imageHelpers';
 
 import { STATES, getDistrictsForState } from '../../data/locations';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { motion } from 'framer-motion';
@@ -43,6 +43,16 @@ const LocationMarker = ({ position, setPosition }) => {
         },
     });
     return position ? <Marker position={position} /> : null;
+};
+
+const MapRefresher = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.setView(center, 15);
+        }
+    }, [center, map]);
+    return null;
 };
 
 const listingSchema = z.object({
@@ -81,13 +91,15 @@ const listingSchema = z.object({
     }
 });
 
-const STEPS = ['Basic Info', 'Details', 'Location', 'Images'];
+const STEPS = ['Basic Info', 'Details', 'Location', 'Images', 'Documents'];
 
 const CreateListingPage = () => {
     const { id } = useParams();
     const isEditMode = Boolean(id);
     const [step, setStep] = useState(0);
     const [images, setImages] = useState([]);
+    const [docs, setDocs] = useState([]);
+    const [existingDocs, setExistingDocs] = useState([]);
     const [existingImages, setExistingImages] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
@@ -130,11 +142,50 @@ const CreateListingPage = () => {
 
     const [mapCenter, setMapCenter] = useState(defaultCenter);
 
+    const [mapSearchQuery, setMapSearchQuery] = useState('');
+    const [mapSearchSuggestions, setMapSearchSuggestions] = useState([]);
+    const [isSearchingMap, setIsSearchingMap] = useState(false);
+
+    const handleMapSearch = async (e) => {
+        e?.preventDefault();
+        if (!mapSearchQuery.trim()) return;
+        setIsSearchingMap(true);
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(mapSearchQuery)}&limit=5`);
+            const data = await res.json();
+            setMapSearchSuggestions(data);
+            if (data.length === 0) {
+                toast.error('No locations found. Try a different search.');
+            }
+        } catch (err) {
+            console.error("Search failed", err);
+            toast.error('Search failed. Please try again.');
+        } finally {
+            setIsSearchingMap(false);
+        }
+    };
+
+    const handleSelectMapSuggestion = (sug) => {
+        const lat = parseFloat(sug.lat);
+        const lng = parseFloat(sug.lon);
+        setMapCenter([lat, lng]);
+        setMapSearchSuggestions([]);
+        setMapSearchQuery(sug.display_name);
+    };
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] },
+        accept: { 'image/*' : ['.jpeg', '.jpg', '.png', '.webp'] },
         maxFiles: 10,
         onDrop: (files) => setImages((prev) => [...prev, ...files].slice(0, 10)),
     });
+
+    const { getRootProps: getDocRootProps, getInputProps: getDocInputProps, isDragActive: isDocDragActive } = useDropzone({
+        accept: { 'application/pdf': ['.pdf'], 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] },
+        maxFiles: 3,
+        onDrop: (files) => setDocs((prev) => [...prev, ...files].slice(0, 3)),
+    });
+
+    const removeDoc = (index) => setDocs((prev) => prev.filter((_, i) => i !== index));
 
     const removeImage = (index) => setImages((prev) => prev.filter((_, i) => i !== index));
 
@@ -142,6 +193,12 @@ const CreateListingPage = () => {
         // In edit mode, allow saving even without new images (existing ones are kept)
         if (!isEditMode && images.length === 0 && existingImages.length === 0) {
             toast.error('Please upload at least one image of the property.');
+            setIsSubmitting(false);
+            return;
+        }
+        if (!isEditMode && docs.length === 0 && existingDocs.length === 0) {
+            toast.error('Please upload at least one proof-of-ownership document (Sale Deed, Tax Receipt, Index II, etc.).');
+            setIsSubmitting(false);
             return;
         }
         setIsSubmitting(true);
@@ -149,9 +206,13 @@ const CreateListingPage = () => {
             const uploadedUrls = images.length > 0 ? await filesToDataUrls(images) : [];
             const allImages = [...existingImages, ...uploadedUrls];
 
+            const uploadedDocUrls = docs.length > 0 ? await filesToDataUrls(docs) : [];
+            const allDocs = [...existingDocs, ...uploadedDocUrls];
+
             const payload = {
                 ...data,
                 images: allImages,
+                verificationDocuments: allDocs,
                 location: {
                     address: data.address,
                     city: data.city,
@@ -334,13 +395,60 @@ const CreateListingPage = () => {
                                     <Input label="Pincode *" placeholder="e.g. 500034" error={errors.pincode?.message} {...register('pincode')} />
                                     <div className="mt-4">
                                         <label className="block text-sm font-medium text-text-secondary mb-2">Pin on Map (Optional)</label>
-                                        <div className="border border-surface-border rounded-xl overflow-hidden shadow-sm h-[300px]">
+                                        <div className="border border-surface-border rounded-xl overflow-hidden shadow-sm h-[350px] relative">
+                                            {/* Map Search Overlay */}
+                                            <div className="absolute top-3 left-12 z-[1000] w-72 max-w-[calc(100%-60px)]">
+                                                <form onSubmit={handleMapSearch} className="flex gap-1.5 bg-surface-card/90 backdrop-blur-md border border-surface-border p-1.5 rounded-xl shadow-lg animate-fadeIn">
+                                                    <input
+                                                        type="text"
+                                                        value={mapSearchQuery}
+                                                        onChange={(e) => setMapSearchQuery(e.target.value)}
+                                                        placeholder="Search location to pin..."
+                                                        className="flex-1 min-w-0 bg-surface-hover/80 border border-surface-border/50 text-[11px] px-3 py-1.5 rounded-lg text-text-primary focus:outline-none focus:ring-1 focus:ring-royal-500"
+                                                    />
+                                                    <button
+                                                        type="submit"
+                                                        disabled={isSearchingMap}
+                                                        className="bg-royal-600 hover:bg-royal-500 disabled:bg-surface-hover text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors duration-150"
+                                                    >
+                                                        {isSearchingMap ? '...' : 'Search'}
+                                                    </button>
+                                                </form>
+                                                {mapSearchSuggestions.length > 0 && (
+                                                    <ul className="absolute z-[1001] w-full bg-surface-card/95 backdrop-blur-md border border-surface-border rounded-xl shadow-2xl max-h-40 overflow-y-auto divide-y divide-surface-border mt-1">
+                                                        {mapSearchSuggestions.map((sug, i) => (
+                                                            <li
+                                                                key={i}
+                                                                onClick={() => handleSelectMapSuggestion(sug)}
+                                                                className="px-3 py-2 text-[10px] text-text-secondary hover:text-text-primary hover:bg-surface-hover cursor-pointer truncate"
+                                                                title={sug.display_name}
+                                                            >
+                                                                {sug.display_name}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </div>
+
                                             <MapContainer center={mapCenter} zoom={12} style={{ height: '100%', width: '100%' }}>
-                                                <TileLayer
-                                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                                />
+                                                <LayersControl position="topright">
+                                                    <LayersControl.BaseLayer checked name="Road View">
+                                                        <TileLayer
+                                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                                        />
+                                                    </LayersControl.BaseLayer>
+                                                    <LayersControl.BaseLayer name="Satellite View">
+                                                        <TileLayer
+                                                            url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+                                                            attribution='&copy; Google'
+                                                            maxZoom={20}
+                                                            maxNativeZoom={20}
+                                                        />
+                                                    </LayersControl.BaseLayer>
+                                                </LayersControl>
                                                 <LocationMarker position={mapCenter} setPosition={setMapCenter} />
+                                                <MapRefresher center={mapCenter} />
                                             </MapContainer>
                                         </div>
                                         <p className="text-xs text-text-muted mt-2">Click on the map to pinpoint the exact location.</p>
@@ -394,6 +502,70 @@ const CreateListingPage = () => {
                                                             type="button"
                                                             onClick={() => removeImage(i)}
                                                             className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {step === 4 && (
+                                <motion.div key="documents" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                                    <div className="p-4 rounded-xl bg-royal-500/10 border border-royal-500/20 mb-4">
+                                        <h3 className="text-sm font-semibold text-royal-400 mb-1">Legal Trust & Ownership Verification</h3>
+                                        <p className="text-xs text-text-secondary leading-relaxed">
+                                            To list your property on Squarefeet X, please upload a proof-of-ownership document (e.g. Sale Deed, Property Tax Receipt, Index II, or Utility Bill in your name). 
+                                            This document will be securely reviewed by our state-level verification managers to guarantee listing authenticity.
+                                        </p>
+                                    </div>
+                                    
+                                    <div
+                                        {...getDocRootProps()}
+                                        className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${isDocDragActive ? 'border-royal-500 bg-royal-500/5' : 'border-surface-border hover:border-royal-500/50'}`}
+                                    >
+                                        <input {...getDocInputProps()} />
+                                        <Upload className="w-10 h-10 text-text-muted mx-auto mb-3" />
+                                        <p className="text-sm text-text-secondary">Drag & drop verification files here or click to browse</p>
+                                        <p className="text-xs text-text-muted mt-1">PDF or Images (Max 3 files)</p>
+                                    </div>
+
+                                    {/* Existing Documents */}
+                                    {existingDocs.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-text-muted font-medium uppercase tracking-wider">Uploaded Documents</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {existingDocs.map((doc, i) => (
+                                                    <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-surface-border bg-surface-card text-xs">
+                                                        <span className="text-text-primary font-medium truncate max-w-[200px]">Document #{i + 1}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExistingDocs((prev) => prev.filter((_, idx) => idx !== i))}
+                                                            className="w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* New Documents */}
+                                    {docs.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-text-muted font-medium uppercase tracking-wider">New Documents to Upload</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {docs.map((doc, i) => (
+                                                    <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-surface-border bg-surface-card text-xs">
+                                                        <span className="text-text-primary font-medium truncate max-w-[200px]">{doc.name}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeDoc(i)}
+                                                            className="w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
                                                         >
                                                             <X className="w-3.5 h-3.5" />
                                                         </button>

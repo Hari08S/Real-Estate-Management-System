@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Search, Compass, Navigation, Car, Heart, Info, RotateCcw } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, LayersControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,6 +62,21 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
     return (R * c).toFixed(2);
 };
 
+// Extract structured address details from Nominatim's address object
+const extractAddressDetails = (addressObj) => {
+    if (!addressObj) return null;
+    return {
+        doorNo: addressObj.house_number || addressObj.building || addressObj.flat || addressObj.door_number || 'N/A',
+        road: addressObj.road || addressObj.street || 'N/A',
+        area: addressObj.suburb || addressObj.neighbourhood || addressObj.village || addressObj.hamlet || addressObj.residential || 'N/A',
+        town: addressObj.city || addressObj.town || addressObj.municipality || addressObj.village || 'N/A',
+        district: addressObj.city_district || addressObj.county || addressObj.district || 'N/A',
+        state: addressObj.state || 'N/A',
+        postcode: addressObj.postcode || 'N/A',
+        country: addressObj.country || 'N/A'
+    };
+};
+
 const RouteMapPage = () => {
     const { user } = useAuth();
     const savedIds = useSavedStore((s) => s.savedIds);
@@ -78,20 +93,34 @@ const RouteMapPage = () => {
     const [toText, setToText] = useState('');
     const [fromCoords, setFromCoords] = useState(null); // [lat, lng]
     const [toCoords, setToCoords] = useState(null);     // [lat, lng]
+    const [fromDetails, setFromDetails] = useState(null);
+    const [toDetails, setToDetails] = useState(null);
 
     const [fromSuggestions, setFromSuggestions] = useState([]);
     const [toSuggestions, setToSuggestions] = useState([]);
     const [isLocating, setIsLocating] = useState(false);
 
-    // Fetch suggestions helper
+    // Debounce timer refs
+    const fromTimerRef = useRef(null);
+    const toTimerRef = useRef(null);
+
+    // Clear timers on unmount
+    useEffect(() => {
+        return () => {
+            if (fromTimerRef.current) clearTimeout(fromTimerRef.current);
+            if (toTimerRef.current) clearTimeout(toTimerRef.current);
+        };
+    }, []);
+
+    // Fetch suggestions helper with English-only results and address details
     const fetchSuggestions = async (query, setFunc) => {
-        if (!query || query.length < 3) {
+        if (!query || query.trim().length < 3) {
             setFunc([]);
             return;
         }
         try {
             const res = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=en&addressdetails=1`
             );
             const data = await res.json();
             setFunc(data);
@@ -113,12 +142,14 @@ const RouteMapPage = () => {
                 setFromCoords([latitude, longitude]);
                 try {
                     const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=en&addressdetails=1`
                     );
                     const data = await res.json();
                     setFromText(data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                    setFromDetails(data.address || null);
                 } catch {
                     setFromText(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                    setFromDetails(null);
                 }
                 setIsLocating(false);
             },
@@ -130,31 +161,77 @@ const RouteMapPage = () => {
         );
     };
 
+    // Debounced input handlers
+    const handleFromChange = (value) => {
+        setFromText(value);
+        if (fromTimerRef.current) {
+            clearTimeout(fromTimerRef.current);
+        }
+        if (!value || value.trim().length < 3) {
+            setFromSuggestions([]);
+            return;
+        }
+        fromTimerRef.current = setTimeout(() => {
+            fetchSuggestions(value, setFromSuggestions);
+        }, 600); // 600ms debounce
+    };
+
+    const handleToChange = (value) => {
+        setToText(value);
+        if (toTimerRef.current) {
+            clearTimeout(toTimerRef.current);
+        }
+        if (!value || value.trim().length < 3) {
+            setToSuggestions([]);
+            return;
+        }
+        toTimerRef.current = setTimeout(() => {
+            fetchSuggestions(value, setToSuggestions);
+        }, 600); // 600ms debounce
+    };
+
     // Form Handlers
     const selectFrom = (sug) => {
+        if (fromTimerRef.current) clearTimeout(fromTimerRef.current);
         setFromCoords([parseFloat(sug.lat), parseFloat(sug.lon)]);
         setFromText(sug.display_name);
+        setFromDetails(sug.address || null);
         setFromSuggestions([]);
     };
 
     const selectTo = (sug) => {
+        if (toTimerRef.current) clearTimeout(toTimerRef.current);
         setToCoords([parseFloat(sug.lat), parseFloat(sug.lon)]);
         setToText(sug.display_name);
+        setToDetails(sug.address || null);
         setToSuggestions([]);
     };
 
     const handleQuickSetTo = (prop) => {
+        if (toTimerRef.current) clearTimeout(toTimerRef.current);
         const lat = prop.location?.lat || 17.3850;
         const lng = prop.location?.lng || 78.4867;
         setToCoords([lat, lng]);
         setToText(`${prop.title}, ${prop.location?.city || ''}`);
+        setToDetails({
+            house_number: prop.location?.address?.split(',')[0] || '',
+            road: prop.location?.address || '',
+            city: prop.location?.city || '',
+            state: prop.location?.state || '',
+            postcode: prop.location?.pincode || '',
+            country: 'India'
+        });
     };
 
     const handleClear = () => {
+        if (fromTimerRef.current) clearTimeout(fromTimerRef.current);
+        if (toTimerRef.current) clearTimeout(toTimerRef.current);
         setFromText('');
         setToText('');
         setFromCoords(null);
         setToCoords(null);
+        setFromDetails(null);
+        setToDetails(null);
         setFromSuggestions([]);
         setToSuggestions([]);
     };
@@ -208,10 +285,7 @@ const RouteMapPage = () => {
                                         <input
                                             type="text"
                                             value={fromText}
-                                            onChange={(e) => {
-                                                setFromText(e.target.value);
-                                                fetchSuggestions(e.target.value, setFromSuggestions);
-                                            }}
+                                            onChange={(e) => handleFromChange(e.target.value)}
                                             placeholder="Type starting point..."
                                             className="w-full pl-9 pr-3 py-2 text-sm bg-surface-hover border border-surface-border rounded-xl focus:border-royal-500 focus:outline-none text-text-primary"
                                         />
@@ -251,6 +325,23 @@ const RouteMapPage = () => {
                                         </motion.ul>
                                     )}
                                 </AnimatePresence>
+
+                                {/* Structured Start Address Details */}
+                                {fromDetails && (
+                                    <div className="bg-surface-hover/30 border border-surface-border/50 rounded-xl p-3 mt-2 text-xs space-y-2">
+                                        <p className="text-[10px] font-bold text-royal-400 uppercase tracking-wider">Start Address Details</p>
+                                        <div className="grid grid-cols-2 gap-2 text-text-secondary">
+                                            <div><span className="font-semibold text-text-muted">Door No:</span> {extractAddressDetails(fromDetails).doorNo}</div>
+                                            <div><span className="font-semibold text-text-muted">Road/Cross:</span> {extractAddressDetails(fromDetails).road}</div>
+                                            <div><span className="font-semibold text-text-muted">Area:</span> {extractAddressDetails(fromDetails).area}</div>
+                                            <div><span className="font-semibold text-text-muted">Town/City:</span> {extractAddressDetails(fromDetails).town}</div>
+                                            <div><span className="font-semibold text-text-muted">District:</span> {extractAddressDetails(fromDetails).district}</div>
+                                            <div><span className="font-semibold text-text-muted">State:</span> {extractAddressDetails(fromDetails).state}</div>
+                                            <div><span className="font-semibold text-text-muted">Postcode:</span> {extractAddressDetails(fromDetails).postcode}</div>
+                                            <div><span className="font-semibold text-text-muted">Country:</span> {extractAddressDetails(fromDetails).country}</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* To Search */}
@@ -260,10 +351,7 @@ const RouteMapPage = () => {
                                     <input
                                         type="text"
                                         value={toText}
-                                        onChange={(e) => {
-                                            setToText(e.target.value);
-                                            fetchSuggestions(e.target.value, setToSuggestions);
-                                        }}
+                                        onChange={(e) => handleToChange(e.target.value)}
                                         placeholder="Search or pick a saved property..."
                                         className="w-full pl-9 pr-3 py-2 text-sm bg-surface-hover border border-surface-border rounded-xl focus:border-royal-500 focus:outline-none text-text-primary"
                                     />
@@ -291,6 +379,23 @@ const RouteMapPage = () => {
                                         </motion.ul>
                                     )}
                                 </AnimatePresence>
+
+                                {/* Structured Destination Address Details */}
+                                {toDetails && (
+                                    <div className="bg-surface-hover/30 border border-surface-border/50 rounded-xl p-3 mt-2 text-xs space-y-2">
+                                        <p className="text-[10px] font-bold text-gold-400 uppercase tracking-wider">Destination Address Details</p>
+                                        <div className="grid grid-cols-2 gap-2 text-text-secondary">
+                                            <div><span className="font-semibold text-text-muted">Door No:</span> {extractAddressDetails(toDetails).doorNo}</div>
+                                            <div><span className="font-semibold text-text-muted">Road/Cross:</span> {extractAddressDetails(toDetails).road}</div>
+                                            <div><span className="font-semibold text-text-muted">Area:</span> {extractAddressDetails(toDetails).area}</div>
+                                            <div><span className="font-semibold text-text-muted">Town/City:</span> {extractAddressDetails(toDetails).town}</div>
+                                            <div><span className="font-semibold text-text-muted">District:</span> {extractAddressDetails(toDetails).district}</div>
+                                            <div><span className="font-semibold text-text-muted">State:</span> {extractAddressDetails(toDetails).state}</div>
+                                            <div><span className="font-semibold text-text-muted">Postcode:</span> {extractAddressDetails(toDetails).postcode}</div>
+                                            <div><span className="font-semibold text-text-muted">Country:</span> {extractAddressDetails(toDetails).country}</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </Card>
 
@@ -360,16 +465,40 @@ const RouteMapPage = () => {
                                 zoom={12}
                                 style={{ height: '100%', width: '100%', zIndex: 1 }}
                             >
-                                <TileLayer
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                />
+                                <LayersControl position="topright">
+                                    <LayersControl.BaseLayer checked name="Road View">
+                                        <TileLayer
+                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                        />
+                                    </LayersControl.BaseLayer>
+                                    <LayersControl.BaseLayer name="Satellite View">
+                                        <TileLayer
+                                            url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+                                            attribution='&copy; Google'
+                                            maxZoom={20}
+                                            maxNativeZoom={20}
+                                        />
+                                    </LayersControl.BaseLayer>
+                                </LayersControl>
                                 {fromCoords && (
                                     <Marker position={fromCoords} icon={fromIcon}>
                                         <Popup>
-                                            <div className="text-xs">
-                                                <p className="font-semibold text-royal-600">Start Location</p>
-                                                <p className="text-text-muted mt-1">{fromText || 'Custom Pin'}</p>
+                                            <div className="text-xs space-y-1 p-1 max-w-[200px]">
+                                                <p className="font-semibold text-royal-600 border-b border-surface-border pb-1 mb-1">Start Location</p>
+                                                {fromDetails ? (
+                                                    <div className="space-y-0.5 text-[10px] text-text-secondary">
+                                                        <p><strong>Door No:</strong> {extractAddressDetails(fromDetails).doorNo}</p>
+                                                        <p><strong>Road:</strong> {extractAddressDetails(fromDetails).road}</p>
+                                                        <p><strong>Area:</strong> {extractAddressDetails(fromDetails).area}</p>
+                                                        <p><strong>City/Town:</strong> {extractAddressDetails(fromDetails).town}</p>
+                                                        <p><strong>District:</strong> {extractAddressDetails(fromDetails).district}</p>
+                                                        <p><strong>State:</strong> {extractAddressDetails(fromDetails).state}</p>
+                                                        <p><strong>Postcode:</strong> {extractAddressDetails(fromDetails).postcode}</p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-text-muted mt-1">{fromText || 'Custom Pin'}</p>
+                                                )}
                                             </div>
                                         </Popup>
                                     </Marker>
@@ -377,9 +506,21 @@ const RouteMapPage = () => {
                                 {toCoords && (
                                     <Marker position={toCoords} icon={toIcon}>
                                         <Popup>
-                                            <div className="text-xs">
-                                                <p className="font-semibold text-gold-600">Destination Property</p>
-                                                <p className="text-text-muted mt-1">{toText || 'Custom Pin'}</p>
+                                            <div className="text-xs space-y-1 p-1 max-w-[200px]">
+                                                <p className="font-semibold text-gold-600 border-b border-surface-border pb-1 mb-1">Destination Property</p>
+                                                {toDetails ? (
+                                                    <div className="space-y-0.5 text-[10px] text-text-secondary">
+                                                        <p><strong>Door No:</strong> {extractAddressDetails(toDetails).doorNo}</p>
+                                                        <p><strong>Road:</strong> {extractAddressDetails(toDetails).road}</p>
+                                                        <p><strong>Area:</strong> {extractAddressDetails(toDetails).area}</p>
+                                                        <p><strong>City/Town:</strong> {extractAddressDetails(toDetails).town}</p>
+                                                        <p><strong>District:</strong> {extractAddressDetails(toDetails).district}</p>
+                                                        <p><strong>State:</strong> {extractAddressDetails(toDetails).state}</p>
+                                                        <p><strong>Postcode:</strong> {extractAddressDetails(toDetails).postcode}</p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-text-muted mt-1">{toText || 'Custom Pin'}</p>
+                                                )}
                                             </div>
                                         </Popup>
                                     </Marker>

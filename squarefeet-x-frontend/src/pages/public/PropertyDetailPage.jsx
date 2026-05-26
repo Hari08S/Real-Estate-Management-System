@@ -10,13 +10,14 @@ import 'swiper/css/thumbs';
 import {
     MapPin, Bed, Bath, Maximize, Calendar, Building2, Unlock,
     Phone, Mail, User, Heart, Share2, ChevronLeft, Tag, CheckCircle2,
-    IndianRupee, X, HandshakeIcon, MessageSquare
+    IndianRupee, X, HandshakeIcon, MessageSquare, GitCompare, Star
 } from 'lucide-react';
 import { propertyService, chatService, managerService } from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils';
 import { PROPERTY_STATUS_LABELS } from '../../constants';
 import { useAuth } from '../../hooks';
 import { useSavedStore } from '../../store/savedStore';
+import { useCompareStore } from '../../store/compareStore';
 import { useRecentlyViewedStore } from '../../store/recentlyViewedStore';
 import Footer from '../../components/layout/Footer';
 import Button from '../../components/ui/Button';
@@ -32,7 +33,7 @@ import { MakeOfferModal } from '../../components/property/MakeOfferModal';
 import { RecentlySoldSection } from '../../components/property/RecentlySold';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, LayersControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { motion } from 'framer-motion';
@@ -196,6 +197,9 @@ const PropertyDetailPage = () => {
     const toggleSave = useSavedStore((s) => s.toggleSave);
     const isSaved = useSavedStore((s) => s.isSaved(id));
     const addRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
+    const addItem = useCompareStore((s) => s.addItem);
+    const removeItem = useCompareStore((s) => s.removeItem);
+    const isInCompare = useCompareStore((s) => s.isInCompare(id));
 
     // New feature states
     const [showOfferModal, setShowOfferModal] = useState(false);
@@ -211,6 +215,31 @@ const PropertyDetailPage = () => {
     const [visitDate, setVisitDate] = useState('');
     const [visitType, setVisitType] = useState('IN_PERSON');
     const [visitTimeSlot, setVisitTimeSlot] = useState('Morning (9 AM - 12 PM)');
+
+    // Review States
+    const [rating, setRating] = useState(5);
+    const [comment, setComment] = useState('');
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        if (!comment.trim()) {
+            toast.error('Please enter a comment.');
+            return;
+        }
+        setIsSubmittingReview(true);
+        try {
+            await propertyService.addReview(id, { rating, comment, buyerName: user?.name || 'Verified Buyer' });
+            toast.success('Review submitted successfully!');
+            setComment('');
+            setRating(5);
+            refetch();
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Failed to submit review');
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
 
     // 3D Tour States
     const [showTour, setShowTour] = useState(false);
@@ -262,6 +291,12 @@ const PropertyDetailPage = () => {
 
             const formattedMessage = `✉️ *NEW PROPERTY INQUIRY*\n\n*Name:* ${inquiryName}\n*Phone:* ${inquiryPhone}\n*Message:* ${inquiryMsg}\n*Property:* ${property.title}`;
 
+            try {
+                await propertyService.incrementUnlockCount(id);
+            } catch (err) {
+                console.error("Failed to increment unlock count", err);
+            }
+
             await chatService.startConversation({
                 propertyId: id,
                 propertyTitle: property.title,
@@ -306,6 +341,12 @@ const PropertyDetailPage = () => {
 
             const formattedMessage = `📅 *SITE VISIT REQUESTED*\n\n*Name:* ${visitName}\n*Phone:* ${visitPhone}\n*Date:* ${visitDate}\n*Time:* ${visitTimeSlot}\n*Type:* ${visitType === 'IN_PERSON' ? 'In-Person Visit' : 'Virtual (Video Call)'}\n*Property:* ${property.title}`;
 
+            try {
+                await propertyService.incrementUnlockCount(id);
+            } catch (err) {
+                console.error("Failed to increment unlock count", err);
+            }
+
             await chatService.startConversation({
                 propertyId: id,
                 propertyTitle: property.title,
@@ -344,6 +385,35 @@ const PropertyDetailPage = () => {
         'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
         'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
     ];
+
+    const tourRooms = {
+        livingRoom: {
+            label: 'Living Room',
+            image: images[0] || 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200',
+            details: 'Expansive family living space designed for luxury entertainment and natural ventilation.',
+            hotspots: [
+                { top: '45%', left: '30%', title: 'Italian Marble Flooring', desc: 'Premium quality Bianco Lasa marble floor with sleek under-floor heating.' },
+                { top: '35%', left: '70%', title: 'Expansive Glass Windows', desc: 'Double-glazed soundproof sliding windows offering panoramic skyline views.' }
+            ]
+        },
+        masterBedroom: {
+            label: 'Master Bedroom',
+            image: images[1] || images[0] || 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1200',
+            details: 'Opulent master suite with dynamic smart lighting and modular walk-in wardrobe.',
+            hotspots: [
+                { top: '50%', left: '50%', title: 'Teak Wood King Bedframe', desc: 'Handcrafted teak wood bedframe with integrated ambient LED strip lighting.' },
+                { top: '30%', left: '75%', title: 'Smart Ambience Controller', desc: 'Control room temperature, smart curtains, and hue lighting from one panel.' }
+            ]
+        },
+        kitchen: {
+            label: 'Gourmet Kitchen',
+            image: images[2] || images[0] || 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1200',
+            details: 'Ultra-modern culinary workspace with high-end modular fixtures and quartz counters.',
+            hotspots: [
+                { top: '40%', left: '45%', title: 'Modular Quartz Island', desc: 'Stain-resistant solid quartz countertop with integrated modular induction cooktop.' }
+            ]
+        }
+    };
 
     return (
         <>
@@ -500,10 +570,22 @@ const PropertyDetailPage = () => {
                                         <h3 className="text-lg font-display font-semibold text-text-primary mb-3">Location on Map</h3>
                                         <div className="border border-surface-border rounded-xl overflow-hidden shadow-sm h-[300px] z-0 relative">
                                             <MapContainer center={[property.location?.lat || 17.3850, property.location?.lng || 78.4867]} zoom={13} style={{ height: '100%', width: '100%' }}>
-                                                <TileLayer
-                                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                                />
+                                                <LayersControl position="topright">
+                                                    <LayersControl.BaseLayer checked name="Road View">
+                                                        <TileLayer
+                                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                                        />
+                                                    </LayersControl.BaseLayer>
+                                                    <LayersControl.BaseLayer name="Satellite View">
+                                                        <TileLayer
+                                                            url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+                                                            attribution='&copy; Google'
+                                                            maxZoom={20}
+                                                            maxNativeZoom={20}
+                                                        />
+                                                    </LayersControl.BaseLayer>
+                                                </LayersControl>
                                                 <Marker position={[property.location?.lat || 17.3850, property.location?.lng || 78.4867]}>
                                                     <Popup>{property.title}</Popup>
                                                 </Marker>
@@ -529,6 +611,144 @@ const PropertyDetailPage = () => {
                                 <Card>
                                     <h3 className="text-lg font-display font-semibold text-text-primary mb-5">Listing Status</h3>
                                     <PropertyStatusTracker currentStatus={property.status} timestamps={property.statusTimestamps} rejectionReason={property.rejectionReason} />
+                                </Card>
+
+                                {/* Reviews & Ratings */}
+                                <Card>
+                                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-surface-border">
+                                        <div>
+                                            <h3 className="text-lg font-display font-semibold text-text-primary">Buyer Reviews & Ratings</h3>
+                                            <p className="text-xs text-text-secondary mt-0.5">Authentic feedback from verified property visitors</p>
+                                        </div>
+                                        <Badge variant="royal" icon={Star}>Social Proof</Badge>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                        {/* Score breakdown */}
+                                        <div className="flex flex-col items-center justify-center bg-surface-hover/30 rounded-2xl p-6 border border-surface-border text-center">
+                                            <p className="text-5xl font-display font-bold text-text-primary">
+                                                {property.reviews && property.reviews.length > 0
+                                                    ? (property.reviews.reduce((acc, r) => acc + r.rating, 0) / property.reviews.length).toFixed(1)
+                                                    : '0.0'}
+                                            </p>
+                                            <div className="flex gap-1 my-2">
+                                                {[1, 2, 3, 4, 5].map((s) => {
+                                                    const avg = property.reviews && property.reviews.length > 0
+                                                        ? property.reviews.reduce((acc, r) => acc + r.rating, 0) / property.reviews.length
+                                                        : 0;
+                                                    return (
+                                                        <Star
+                                                            key={s}
+                                                            className={`w-4 h-4 ${s <= Math.round(avg) ? 'text-amber-400 fill-amber-400' : 'text-text-muted'}`}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-xs text-text-secondary font-medium">
+                                                Based on {property.reviews ? property.reviews.length : 0} reviews
+                                            </p>
+                                        </div>
+
+                                        {/* Bars breakdown */}
+                                        <div className="md:col-span-2 flex flex-col justify-center space-y-2">
+                                            {[5, 4, 3, 2, 1].map((s) => {
+                                                const total = property.reviews ? property.reviews.length : 0;
+                                                const count = property.reviews ? property.reviews.filter((r) => r.rating === s).length : 0;
+                                                const percent = total > 0 ? (count / total) * 100 : 0;
+                                                return (
+                                                    <div key={s} className="flex items-center gap-3 text-xs">
+                                                        <span className="w-3 text-text-secondary text-right font-medium">{s}</span>
+                                                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                                                        <div className="flex-1 h-2 bg-surface-hover rounded-full overflow-hidden border border-surface-border">
+                                                            <div className="h-full bg-royal-500 rounded-full" style={{ width: `${percent}%` }} />
+                                                        </div>
+                                                        <span className="w-8 text-text-muted text-right font-medium">{percent.toFixed(0)}%</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Review form */}
+                                    {isAuthenticated ? (
+                                        <form onSubmit={handleReviewSubmit} className="space-y-4 bg-surface-hover/20 p-5 rounded-2xl border border-surface-border mb-8">
+                                            <h4 className="text-sm font-semibold text-text-primary">Leave a Review</h4>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-text-secondary">Your Rating:</span>
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4, 5].map((s) => (
+                                                        <button
+                                                            key={s}
+                                                            type="button"
+                                                            onClick={() => setRating(s)}
+                                                            className="focus:outline-none"
+                                                        >
+                                                            <Star
+                                                                className={`w-5 h-5 transition-transform hover:scale-110 ${s <= rating ? 'text-amber-400 fill-amber-400' : 'text-text-muted'}`}
+                                                            />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-medium text-text-secondary">Your Comment</label>
+                                                <textarea
+                                                    required
+                                                    rows={3}
+                                                    value={comment}
+                                                    onChange={(e) => setComment(e.target.value)}
+                                                    placeholder="Share your experience (visit, neighborhood, seller interaction...)"
+                                                    className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-royal-500/50 resize-none"
+                                                />
+                                            </div>
+                                            <Button type="submit" variant="primary" size="sm" isLoading={isSubmittingReview}>
+                                                Submit Review
+                                            </Button>
+                                        </form>
+                                    ) : (
+                                        <div className="p-4 rounded-xl bg-surface-hover border border-surface-border text-center text-xs text-text-secondary mb-8">
+                                            Please <Link to="/login" className="text-royal-400 font-semibold hover:underline">login</Link> to leave a review for this property.
+                                        </div>
+                                    )}
+
+                                    {/* Reviews list */}
+                                    <div className="space-y-4">
+                                        {property.reviews && property.reviews.length > 0 ? (
+                                            property.reviews.map((r) => (
+                                                <div key={r.id || r._id} className="p-4 rounded-2xl border border-surface-border bg-surface-card space-y-2">
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-full bg-royal-500/10 border border-royal-500/20 flex items-center justify-center text-xs font-bold text-royal-400">
+                                                                {r.buyerName ? r.buyerName.substring(0, 2).toUpperCase() : 'VB'}
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-xs font-bold text-text-primary">{r.buyerName || 'Verified Buyer'}</span>
+                                                                    <Badge variant="success" size="sm">Verified Buyer</Badge>
+                                                                </div>
+                                                                <p className="text-[10px] text-text-muted mt-0.5">{formatDate(r.createdAt)}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-0.5">
+                                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                                <Star
+                                                                    key={s}
+                                                                    className={`w-3 h-3 ${s <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-text-muted'}`}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs text-text-secondary leading-relaxed pl-10">{r.comment}</p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-8 bg-surface-hover/10 rounded-2xl border border-dashed border-surface-border">
+                                                <MessageSquare className="w-8 h-8 text-text-muted mx-auto mb-2" />
+                                                <p className="text-xs font-semibold text-text-primary">No reviews yet</p>
+                                                <p className="text-[11px] text-text-muted mt-1">Be the first to review this property listing!</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </Card>
                             </div>
 
@@ -654,7 +874,7 @@ const PropertyDetailPage = () => {
 
                                 {/* Quick Actions */}
                                 <Card>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         <Button
                                             variant={isSaved ? 'primary' : 'secondary'}
                                             className="w-full"
@@ -667,6 +887,22 @@ const PropertyDetailPage = () => {
                                             {isSaved ? 'Saved' : 'Save'}
                                         </Button>
                                         <Button
+                                             variant={isInCompare ? 'primary' : 'secondary'}
+                                             className="w-full"
+                                             icon={GitCompare}
+                                             onClick={() => {
+                                                 if (isInCompare) {
+                                                     removeItem(id);
+                                                     toast.success('Removed from comparison');
+                                                 } else {
+                                                     addItem(property);
+                                                     toast.success('Added to comparison');
+                                                 }
+                                             }}
+                                         >
+                                             {isInCompare ? 'Comparing' : 'Compare'}
+                                         </Button>
+                                         <Button
                                             variant="secondary"
                                             className="w-full"
                                             icon={Share2}
@@ -677,12 +913,12 @@ const PropertyDetailPage = () => {
                                                 window.open(waUrl, '_blank');
                                             }}
                                         >
-                                            WhatsApp
+                                            Share
                                         </Button>
                                         {isAuthenticated && (
                                             <Button
                                                 variant="gold"
-                                                className="col-span-2 w-full"
+                                                className="col-span-3 w-full"
                                                 icon={HandshakeIcon}
                                                 onClick={() => setShowOfferModal(true)}
                                             >
@@ -751,6 +987,13 @@ const PropertyDetailPage = () => {
                         } catch (err) {
                             console.error("Failed to fetch state manager, falling back to seller", err);
                         }
+
+                        try {
+                            await propertyService.incrementUnlockCount(id);
+                        } catch (err) {
+                            console.error("Failed to increment unlock count", err);
+                        }
+
                         await chatService.startConversation({
                             propertyId: id,
                             propertyTitle: property.title,
@@ -787,14 +1030,14 @@ const PropertyDetailPage = () => {
                         {/* Tour Viewer Area */}
                         <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
                             <img
-                                src={TOUR_ROOMS[activeRoom].image}
+                                src={tourRooms[activeRoom].image}
                                 alt={activeRoom}
                                 className="w-full h-full object-cover transition-all duration-700 ease-in-out transform scale-105"
                             />
                             
                             {/* Glassmorphism Room Controls */}
                             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 bg-navy-950/80 backdrop-blur-md px-4 py-2.5 rounded-full border border-royal-500/20 shadow-lg z-10">
-                                {Object.keys(TOUR_ROOMS).map((roomKey) => (
+                                {Object.keys(tourRooms).map((roomKey) => (
                                     <button
                                         key={roomKey}
                                         onClick={() => {
@@ -807,13 +1050,13 @@ const PropertyDetailPage = () => {
                                                 : 'text-text-secondary hover:text-white hover:bg-surface-hover/50'
                                         }`}
                                     >
-                                        {TOUR_ROOMS[roomKey].label}
+                                        {tourRooms[roomKey].label}
                                     </button>
                                 ))}
                             </div>
 
                             {/* Hotspots */}
-                            {TOUR_ROOMS[activeRoom].hotspots.map((h, i) => (
+                            {tourRooms[activeRoom].hotspots.map((h, i) => (
                                 <div
                                     key={i}
                                     style={{ top: h.top, left: h.left }}
@@ -857,8 +1100,8 @@ const PropertyDetailPage = () => {
 
                             {/* Info overlay */}
                             <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm p-3 rounded-2xl border border-white/5 max-w-xs text-xs pointer-events-none">
-                                <p className="font-bold text-white mb-0.5">{TOUR_ROOMS[activeRoom].label} Overview</p>
-                                <p className="text-text-muted">{TOUR_ROOMS[activeRoom].details}</p>
+                                <p className="font-bold text-white mb-0.5">{tourRooms[activeRoom].label} Overview</p>
+                                <p className="text-text-muted">{tourRooms[activeRoom].details}</p>
                             </div>
                         </div>
                     </motion.div>

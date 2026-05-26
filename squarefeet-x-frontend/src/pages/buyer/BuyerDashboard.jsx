@@ -64,9 +64,11 @@ const BuyerDashboard = () => {
 
     const savedProperties = (allProperties?.properties || []).filter((p) => savedIds.includes(p.id));
     const activeChats = chatData?.conversations?.length || 0;
+    // Use active chat conversations as the inquiry count — each conversation = one inquiry
+    const inquiryCount = activeChats;
 
     const stats = {
-        totalInquiries: apiStats?.totalInquiries ?? activeChats,
+        totalInquiries: inquiryCount,
         totalViewed: recentlyViewed.length || (apiStats?.totalViewed ?? Math.max(savedProperties.length * 2, 0)),
         totalSaved: savedIds.length,
         activeChats,
@@ -103,7 +105,7 @@ const BuyerDashboard = () => {
                 </div>
 
                 <div className="mb-8">
-                    <BuyerCredibilityScore user={user} savedCount={stats.totalSaved} inquiryCount={stats.totalInquiries} />
+                    <BuyerCredibilityScore user={user} savedCount={stats.totalSaved} inquiryCount={inquiryCount} />
                 </div>
 
                 <Card>

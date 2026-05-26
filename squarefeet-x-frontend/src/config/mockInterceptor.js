@@ -113,12 +113,47 @@ const routeHandlers = {
         const queryParams = new URLSearchParams(url.split('?')[1] || '');
         const listingType = queryParams.get('listingType') || '';
         const search = queryParams.get('search') || '';
+        const propertyType = queryParams.get('propertyType') || '';
+        const minPrice = queryParams.get('minPrice') || queryParams.get('priceMin') || '';
+        const maxPrice = queryParams.get('maxPrice') || queryParams.get('priceMax') || '';
+        const bedrooms = queryParams.get('bedrooms') || '';
+        const city = queryParams.get('city') || '';
         
         let filtered = properties.filter((p) => p.status === 'APPROVED');
         
         if (listingType) {
             const types = listingType.split(',').map(t => t.toUpperCase());
             filtered = filtered.filter((p) => types.includes(p.listingType?.toUpperCase()));
+        }
+        
+        if (propertyType) {
+            filtered = filtered.filter((p) => p.propertyType === propertyType);
+        }
+
+        if (minPrice) {
+            const min = parseFloat(minPrice);
+            filtered = filtered.filter((p) => {
+                const price = p.price || p.monthlyRent || p.leaseAmount || 0;
+                return price >= min;
+            });
+        }
+
+        if (maxPrice) {
+            const max = parseFloat(maxPrice);
+            filtered = filtered.filter((p) => {
+                const price = p.price || p.monthlyRent || p.leaseAmount || 0;
+                return price <= max;
+            });
+        }
+
+        if (bedrooms) {
+            const beds = parseInt(bedrooms, 10);
+            filtered = filtered.filter((p) => p.bedrooms >= beds);
+        }
+
+        if (city) {
+            const cityLower = city.toLowerCase();
+            filtered = filtered.filter((p) => p.location?.city?.toLowerCase().includes(cityLower));
         }
         
         if (search) {
@@ -146,6 +181,8 @@ const routeHandlers = {
             ...rest,
             location: body.location || { address, city, state, pincode, district: district || city },
             images: Array.isArray(body.images) && body.images.length > 0 ? body.images : [],
+            verificationDocuments: Array.isArray(body.verificationDocuments) && body.verificationDocuments.length > 0 ? body.verificationDocuments : [],
+            reviews: Array.isArray(body.reviews) ? body.reviews : [],
             sellerId: currentUser?.id,
             status: 'PENDING',
             views: 0,
@@ -163,8 +200,9 @@ const routeHandlers = {
         if (idx < 0) throw { response: { status: 404, data: { message: 'Property not found' } } };
         const merged = { ...properties[idx], ...body };
         if (body.location) merged.location = { ...properties[idx].location, ...body.location };
-        // Always use the incoming images array if provided; keep existing if not
         if (Array.isArray(body.images)) merged.images = body.images;
+        if (Array.isArray(body.verificationDocuments)) merged.verificationDocuments = body.verificationDocuments;
+        if (Array.isArray(body.reviews)) merged.reviews = body.reviews;
         properties[idx] = merged;
         return mockResponse(properties[idx]);
     },
@@ -176,6 +214,23 @@ const routeHandlers = {
             properties[idx].images = [...(properties[idx].images || []), ...urls];
         }
         return mockResponse({ message: 'Images uploaded', images: properties[idx].images });
+    },
+    'POST /properties/:id/reviews': async (body, params) => {
+        const idx = properties.findIndex((x) => x.id === params.id);
+        if (idx < 0) throw { response: { status: 404, data: { message: 'Property not found' } } };
+        const review = {
+            id: 'r' + Date.now(),
+            buyerId: currentUser?.id || 'anonymous',
+            buyerName: currentUser?.name || 'Verified Buyer',
+            rating: body.rating || 5,
+            comment: body.comment || '',
+            createdAt: new Date().toISOString()
+        };
+        if (!Array.isArray(properties[idx].reviews)) {
+            properties[idx].reviews = [];
+        }
+        properties[idx].reviews.push(review);
+        return mockResponse(properties[idx]);
     },
     'DELETE /properties/:id': async (_, params) => {
         properties = properties.filter((x) => x.id !== params.id);

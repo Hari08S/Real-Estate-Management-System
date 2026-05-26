@@ -75,7 +75,56 @@ public class PropertyService {
                     .collect(Collectors.toList());
         }
 
+        // Furnishing
+        String furnishing = params.get("furnishing");
+        if (furnishing != null && !furnishing.isBlank()) {
+            properties = properties.stream()
+                    .filter(p -> furnishing.equalsIgnoreCase(p.getFurnishing()))
+                    .collect(Collectors.toList());
+        }
+
+        // RERA Status
+        String reraStatus = params.get("reraStatus");
+        if (reraStatus != null && !reraStatus.isBlank()) {
+            properties = properties.stream()
+                    .filter(p -> reraStatus.equalsIgnoreCase(p.getReraStatus()))
+                    .collect(Collectors.toList());
+        }
+
+        // Floor
+        String floor = params.get("floor");
+        if (floor != null && !floor.isBlank()) {
+            properties = properties.stream()
+                    .filter(p -> floor.equalsIgnoreCase(p.getFloor()))
+                    .collect(Collectors.toList());
+        }
+
+        // Distance from pinned point
+        String distance = params.get("distance");
+        String pinnedLat = params.get("pinnedLat");
+        String pinnedLng = params.get("pinnedLng");
+        if (distance != null && !distance.isBlank() && pinnedLat != null && !pinnedLat.isBlank() && pinnedLng != null && !pinnedLng.isBlank()) {
+            double distKm = Double.parseDouble(distance);
+            double lat = Double.parseDouble(pinnedLat);
+            double lng = Double.parseDouble(pinnedLng);
+            properties = properties.stream()
+                    .filter(p -> p.getLocation() != null && p.getLocation().getLat() != null && p.getLocation().getLng() != null
+                            && calculateDistance(lat, lng, p.getLocation().getLat(), p.getLocation().getLng()) <= distKm)
+                    .collect(Collectors.toList());
+        }
+
         return Map.of("properties", properties, "total", properties.size());
+    }
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Earth radius in km
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     private double getEffectivePrice(Property p) {
@@ -86,8 +135,24 @@ public class PropertyService {
     }
 
     public Property getById(String id) {
-        return propertyRepository.findById(id)
+        Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property not found"));
+        property.setViews((property.getViews() != null ? property.getViews() : 0) + 1);
+        Random r = new Random();
+        if (property.getBuyerPercent() == null) {
+            property.setBuyerPercent(50 + r.nextInt(31));
+        }
+        if (property.getAvgTimeOnPage() == null) {
+            property.setAvgTimeOnPage(45 + r.nextInt(136));
+        }
+        return propertyRepository.save(property);
+    }
+
+    public Property incrementUnlockCount(String id) {
+        Property property = propertyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Property not found"));
+        property.setUnlockCount((property.getUnlockCount() != null ? property.getUnlockCount() : 0) + 1);
+        return propertyRepository.save(property);
     }
 
     public Property create(Property property, String sellerId) {
@@ -95,6 +160,9 @@ public class PropertyService {
         property.setSellerId(sellerId);
         property.setViews(0);
         property.setUnlockCount(0);
+        Random r = new Random();
+        property.setBuyerPercent(50 + r.nextInt(31));
+        property.setAvgTimeOnPage(45 + r.nextInt(136));
         property.setCreatedAt(LocalDateTime.now());
         property.setStatusTimestamps(Map.of(
                 "DRAFT", LocalDateTime.now(),
@@ -123,12 +191,34 @@ public class PropertyService {
         if (updates.getBedrooms() != null) existing.setBedrooms(updates.getBedrooms());
         if (updates.getBathrooms() != null) existing.setBathrooms(updates.getBathrooms());
         if (updates.getArea() != null) existing.setArea(updates.getArea());
+        if (updates.getFurnishing() != null) existing.setFurnishing(updates.getFurnishing());
+        if (updates.getReraStatus() != null) existing.setReraStatus(updates.getReraStatus());
+        if (updates.getFloor() != null) existing.setFloor(updates.getFloor());
         if (updates.getLocation() != null) existing.setLocation(updates.getLocation());
         if (updates.getImages() != null && !updates.getImages().isEmpty()) {
             existing.setImages(updates.getImages());
         }
+        if (updates.getVerificationDocuments() != null && !updates.getVerificationDocuments().isEmpty()) {
+            existing.setVerificationDocuments(updates.getVerificationDocuments());
+        }
+        if (updates.getReviews() != null && !updates.getReviews().isEmpty()) {
+            existing.setReviews(updates.getReviews());
+        }
 
         return propertyRepository.save(existing);
+    }
+
+    public Property addReview(String id, Property.Review review, String buyerId, String buyerName) {
+        Property property = getById(id);
+        review.setId(UUID.randomUUID().toString());
+        review.setBuyerId(buyerId);
+        review.setBuyerName(buyerName);
+        review.setCreatedAt(LocalDateTime.now());
+        if (property.getReviews() == null) {
+            property.setReviews(new ArrayList<>());
+        }
+        property.getReviews().add(review);
+        return propertyRepository.save(property);
     }
 
     public void delete(String id, String userId) {
@@ -144,6 +234,21 @@ public class PropertyService {
 
     public Map<String, Object> getMyListings(String sellerId) {
         List<Property> properties = propertyRepository.findBySellerId(sellerId);
+        Random r = new Random();
+        for (Property p : properties) {
+            boolean changed = false;
+            if (p.getBuyerPercent() == null) {
+                p.setBuyerPercent(50 + r.nextInt(31));
+                changed = true;
+            }
+            if (p.getAvgTimeOnPage() == null) {
+                p.setAvgTimeOnPage(45 + r.nextInt(136));
+                changed = true;
+            }
+            if (changed) {
+                propertyRepository.save(p);
+            }
+        }
         Map<String, Object> stats = Map.of(
                 "totalListings", properties.size(),
                 "activeListings", properties.stream().filter(p -> "APPROVED".equals(p.getStatus())).count(),

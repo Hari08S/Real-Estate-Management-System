@@ -42,9 +42,11 @@ export const propertyService = {
         return api.get(`/properties/my-listings?${query}`);
     },
     getSavedProperties: () => api.get('/properties/saved'),
+    incrementUnlockCount: (id) => api.post(`/properties/${id}/unlock`),
     uploadImages: (id, formData) => api.post(`/properties/${id}/images`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
+    addReview: (id, reviewData) => api.post(`/properties/${id}/reviews`, reviewData),
 };
 
 // ── Chat Service ──

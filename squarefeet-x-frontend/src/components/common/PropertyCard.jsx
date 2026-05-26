@@ -4,6 +4,8 @@ import { MapPin, Bed, Bath, Maximize, IndianRupee, Unlock, GitCompare, Heart, Sh
 import { formatCurrency, truncateText } from '../../utils';
 import { PROPERTY_STATUS_LABELS } from '../../constants';
 import { useSavedStore } from '../../store/savedStore';
+import { useCompareStore } from '../../store/compareStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import toast from 'react-hot-toast';
@@ -28,6 +30,7 @@ const PropertyCard = memo(({ property, onUnlock, onCompare, showActions = true }
 
     const toggleSave = useSavedStore((s) => s.toggleSave);
     const isSaved = useSavedStore((s) => s.isSaved(id));
+    const isInCompare = useCompareStore((s) => s.isInCompare(id));
 
     const displayPrice = price || monthlyRent || property.leaseAmount || 0;
     const priceLabel = listingType === 'RENT' ? '/mo' : listingType === 'LEASE' ? '/lease' : '';
@@ -171,7 +174,36 @@ const PropertyCard = memo(({ property, onUnlock, onCompare, showActions = true }
                     {showActions && (
                         <div className="flex gap-2">
                             {onCompare && (
-                                <button onClick={() => onCompare(property)} className="p-2 rounded-xl text-text-secondary hover:text-royal-400 hover:bg-royal-500/10 transition-all">
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (isInCompare) {
+                                            useCompareStore.getState().removeItem(id);
+                                            toast.success('Removed from comparison');
+                                            useNotificationStore.getState().addNotification({
+                                                id: `compare-remove-${id}-${Date.now()}`,
+                                                title: 'Comparison Update',
+                                                message: `Removed ${property.title || 'property'} from comparison list.`,
+                                                link: '/compare',
+                                                createdAt: Date.now(),
+                                                read: false
+                                            });
+                                        } else {
+                                            onCompare(property);
+                                            toast.success('Added to comparison');
+                                            useNotificationStore.getState().addNotification({
+                                                id: `compare-add-${id}-${Date.now()}`,
+                                                title: 'Comparison Update',
+                                                message: `Added ${property.title || 'property'} to comparison list.`,
+                                                link: '/compare',
+                                                createdAt: Date.now(),
+                                                read: false
+                                            });
+                                        }
+                                    }}
+                                    className={`p-2 rounded-xl transition-all ${isInCompare ? 'text-royal-400 bg-royal-500/10 hover:bg-royal-500/20' : 'text-text-secondary hover:text-royal-400 hover:bg-royal-500/10'}`}
+                                >
                                     <GitCompare className="w-4 h-4" />
                                 </button>
                             )}

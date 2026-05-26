@@ -52,10 +52,10 @@ const stats = [
 ];
 
 const testimonials = [
-    { name: 'Arjun Patel', role: 'Buyer', city: 'Mumbai', text: 'Found my dream apartment without paying any brokerage. The direct chat feature made talking to the seller incredibly easy!', rating: 5 },
-    { name: 'Priya Sharma', role: 'Seller', city: 'Delhi', text: 'Listed my property for free and got genuine buyers directly. No more dealing with brokers!', rating: 5 },
-    { name: 'Rajesh Kumar', role: 'Buyer', city: 'Bangalore', text: 'The verification process gives confidence that every listing is genuine. Amazing platform!', rating: 5 },
-    { name: 'Sneha Reddy', role: 'Seller', city: 'Hyderabad', text: 'Sold my villa in just 2 weeks through SquareFeet X. The manager verification really builds trust.', rating: 5 },
+    { name: 'Arjun Patel', role: 'Buyer', city: 'Mumbai', text: 'Found my dream apartment without paying any brokerage. The direct chat feature made talking to the seller incredibly easy!', rating: 5, gradient: 'from-blue-500 to-indigo-600' },
+    { name: 'Priya Sharma', role: 'Seller', city: 'Delhi', text: 'Listed my property for free and got genuine buyers directly. No more dealing with brokers!', rating: 5, gradient: 'from-purple-500 to-pink-600' },
+    { name: 'Rajesh Kumar', role: 'Buyer', city: 'Bangalore', text: 'The verification process gives confidence that every listing is genuine. Amazing platform!', rating: 5, gradient: 'from-emerald-500 to-teal-600' },
+    { name: 'Sneha Reddy', role: 'Seller', city: 'Hyderabad', text: 'Sold my villa in just 2 weeks through SquareFeet X. The manager verification really builds trust.', rating: 5, gradient: 'from-amber-500 to-rose-600' },
 ];
 
 const LandingPage = () => {
@@ -72,7 +72,7 @@ const LandingPage = () => {
                 <Navbar />
 
                 {/* ===== HERO ===== */}
-                <section className="relative pt-[11rem] pb-28 lg:pt-[14rem] lg:pb-36 overflow-hidden">
+                <section className="relative pt-[7rem] pb-12 lg:pt-[9rem] lg:pb-16 overflow-hidden">
                     {/* Background Effects */}
                     <div className="absolute inset-0">
                         <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full bg-royal-600/10 blur-[120px]" />
@@ -146,7 +146,7 @@ const LandingPage = () => {
                 </section>
 
                 {/* ===== FEATURES ===== */}
-                <section className="py-24 lg:py-32 relative">
+                <section className="py-16 lg:py-20 relative">
                     <div className="page-container">
                         <motion.div {...fadeUp} className="text-center mb-16 max-w-3xl mx-auto">
                             <span className="text-sm font-medium text-royal-400 uppercase tracking-widest">Why Choose Us</span>
@@ -175,7 +175,7 @@ const LandingPage = () => {
                 </section>
 
                 {/* ===== HOW IT WORKS ===== */}
-                <section id="how-it-works" className="py-24 lg:py-32 bg-surface-card/50">
+                <section id="how-it-works" className="py-16 lg:py-20 bg-surface-card/50">
                     <div className="page-container">
                         <motion.div {...fadeUp} className="text-center mb-20">
                             <span className="text-sm font-medium text-gold-400 uppercase tracking-widest">Simple Process</span>
@@ -202,7 +202,7 @@ const LandingPage = () => {
                 </section>
 
                 {/* ===== TESTIMONIALS ===== */}
-                <section className="py-24 lg:py-32">
+                <section className="py-16 lg:py-20">
                     <div className="page-container">
                         <motion.div {...fadeUp} className="text-center mb-16">
                             <span className="text-sm font-medium text-gold-400 uppercase tracking-widest">Testimonials</span>
@@ -231,9 +231,9 @@ const LandingPage = () => {
                                                 <Star key={j} className="w-4 h-4 fill-gold-400 text-gold-400" />
                                             ))}
                                         </div>
-                                        <p className="text-text-secondary text-sm leading-relaxed mb-6 italic flex-1">"{t.text}"</p>
+                                        <p className="text-text-secondary text-sm leading-relaxed mb-6 italic flex-1 min-h-[80px]">"{t.text}"</p>
                                         <div className="flex items-center gap-3 pt-4 border-t border-surface-border">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-royal-600 to-gold-500 flex items-center justify-center text-white font-display font-semibold text-sm shrink-0">
+                                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient || 'from-royal-600 to-gold-500'} flex items-center justify-center text-white font-display font-semibold text-sm shrink-0`}>
                                                 {t.name[0]}
                                             </div>
                                             <div>
@@ -249,7 +249,7 @@ const LandingPage = () => {
                 </section>
 
                 {/* ===== CTA ===== */}
-                <section className="py-20 lg:py-28">
+                <section className="py-12 lg:py-16">
                     <div className="page-container">
                         <motion.div {...fadeUp}>
                             <div className="relative rounded-3xl overflow-hidden">

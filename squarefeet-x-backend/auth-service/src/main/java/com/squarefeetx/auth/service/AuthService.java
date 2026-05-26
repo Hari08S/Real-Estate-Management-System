@@ -123,22 +123,22 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-        String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
-        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        // Generate 6-digit numeric OTP
+        String otp = String.format("%06d", new java.util.Random().nextInt(1000000));
+        user.setResetToken(otp);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15)); // OTP valid for 15 minutes
         userRepository.save(user);
 
-        String resetLink = "http://localhost:5173/reset-password/" + token;
-        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
-        return token;
+        emailService.sendPasswordResetOtp(user.getEmail(), otp);
+        return otp;
     }
 
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findByResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset OTP"));
 
         if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Reset token has expired");
+            throw new RuntimeException("Reset OTP has expired");
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));

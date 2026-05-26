@@ -123,11 +123,10 @@ const ConversationFilters = ({ filter, setFilter }) => (
             <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                    filter === f
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${filter === f
                         ? 'bg-royal-600 text-white'
                         : 'bg-surface-hover text-text-muted hover:text-text-primary'
-                }`}
+                    }`}
             >
                 {f}
             </button>
@@ -157,7 +156,7 @@ const ChatPage = () => {
         refetchInterval: 2000,
         staleTime: 500,
     });
-    
+
     // Group conversations by otherUser.id to prevent duplicates in the list
     const rawConversations = convData?.conversations || [];
     const groupedConvsMap = new Map();
@@ -193,7 +192,7 @@ const ChatPage = () => {
     const managersList = managersData?.managers || [];
 
     const { data: msgData } = useQuery({
-        queryKey: ['messages', selectedChat?.ids],
+        queryKey: ['messages', selectedChat?.ids?.join(',')],
         queryFn: async () => {
             if (!selectedChat?.ids) return { messages: [] };
             const results = await Promise.all(
@@ -213,8 +212,9 @@ const ChatPage = () => {
     const sendMutation = useMutation({
         mutationFn: (data) => chatService.sendMessage(selectedChat.id, data),
         onMutate: async (data) => {
-            const prev = queryClient.getQueryData(['messages', selectedChat.ids]);
-            queryClient.setQueryData(['messages', selectedChat.ids], (old) => ({
+            const queryKey = ['messages', selectedChat.ids.join(',')];
+            const prev = queryClient.getQueryData(queryKey);
+            queryClient.setQueryData(queryKey, (old) => ({
                 ...old,
                 messages: [...(old?.messages || []), {
                     id: `pending-${Date.now()}`, content: data.content,
@@ -224,11 +224,13 @@ const ChatPage = () => {
             return { prev };
         },
         onError: (_e, _d, ctx) => {
-            queryClient.setQueryData(['messages', selectedChat.ids], ctx.prev);
+            const queryKey = ['messages', selectedChat.ids.join(',')];
+            queryClient.setQueryData(queryKey, ctx.prev);
             toast.error('Failed to send');
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['messages', selectedChat.ids] });
+            const queryKey = ['messages', selectedChat.ids.join(',')];
+            queryClient.invalidateQueries({ queryKey });
             queryClient.invalidateQueries({ queryKey: ['conversations'] });
         },
     });
@@ -269,7 +271,7 @@ const ChatPage = () => {
 
     useEffect(() => {
         if (selectedChat && selectedChat.ids) {
-            Promise.all(selectedChat.ids.map(id => chatService.markRead(id).catch(() => {})));
+            Promise.all(selectedChat.ids.map(id => chatService.markRead(id).catch(() => { })));
             queryClient.invalidateQueries({ queryKey: ['conversations'] });
             queryClient.invalidateQueries({ queryKey: ['unread-count'] });
             queryClient.invalidateQueries({ queryKey: ['navbar-conversations'] });
@@ -334,6 +336,19 @@ const ChatPage = () => {
         'Manager': ['MANAGER'],
     };
     const filteredConvs = conversations.filter((c) => {
+        // Active role based filtering to prevent personal chats from leaking into admin/manager dashboards
+        if (user?.activeRole === 'ADMIN') {
+            const isAdminRelated = c.propertyId === 'admin-support' || c.propertyTitle?.startsWith('Admin ↔');
+            if (!isAdminRelated) return false;
+        } else if (user?.activeRole === 'MANAGER') {
+            const isManagerRelated = c.propertyTitle?.startsWith('Support —') || c.propertyId === 'admin-support' || c.propertyTitle?.startsWith('Admin ↔');
+            if (!isManagerRelated) return false;
+        } else {
+            // Regular user: Buyer/Seller should NOT see Admin Support Channel or Admin ↔ manager chats here
+            const isAdminPrivateChat = c.propertyId === 'admin-support' || c.propertyTitle?.startsWith('Admin ↔');
+            if (isAdminPrivateChat) return false;
+        }
+
         const matchSearch = !search ||
             c.otherUser?.name?.toLowerCase().includes(search.toLowerCase()) ||
             c.propertyTitle?.toLowerCase().includes(search.toLowerCase());
@@ -341,12 +356,12 @@ const ChatPage = () => {
             const roles = roleFilterMap[roleFilter] || [];
             const hasRole = roles.some(r => c.otherUser?.activeRole === r || c.otherUser?.roles?.includes(r));
             if (hasRole) return true;
-            
+
             // Resilient Fallback for Managers
             if (roleFilter === 'Manager') {
                 return c.propertyTitle?.startsWith('Admin ↔') ||
-                       c.propertyTitle?.startsWith('Support —') ||
-                       managersList.some(m => m.id === c.otherUser?.id);
+                    c.propertyTitle?.startsWith('Support —') ||
+                    managersList.some(m => m.id === c.otherUser?.id);
             }
             return false;
         })();
@@ -508,7 +523,7 @@ const ChatPage = () => {
 
                                 {/* Messages */}
                                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                                {messages.map((msg) => {
+                                    {messages.map((msg) => {
                                         const isMine = isOwnMessage(msg, user);
                                         return (
                                             <div key={msg.id} className={`flex flex-col w-full ${isMine ? 'items-end' : 'items-start'}`}>
@@ -516,9 +531,8 @@ const ChatPage = () => {
                                                     {!isMine && (
                                                         <Avatar name={selectedChat.otherUser?.name} size="xs" className="mr-2 mt-auto flex-shrink-0" />
                                                     )}
-                                                    <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${
-                                                        isMine ? 'bg-royal-600 text-white rounded-br-sm' : 'bg-surface-hover text-text-primary rounded-bl-sm'
-                                                    } ${msg.pending ? 'opacity-70' : ''}`}>
+                                                    <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${isMine ? 'bg-royal-600 text-white rounded-br-sm' : 'bg-surface-hover text-text-primary rounded-bl-sm'
+                                                        } ${msg.pending ? 'opacity-70' : ''}`}>
                                                         <p className="break-words whitespace-pre-wrap">{msg.content}</p>
                                                         <p className={`text-[10px] mt-1 ${isMine ? 'text-white/60 text-right' : 'text-text-muted'}`}>
                                                             {formatRelativeTime(msg.createdAt)}{msg.pending && ' · Sending...'}
@@ -536,10 +550,10 @@ const ChatPage = () => {
                                                                 type === 'ACCEPT'
                                                                     ? `✅ *OFFER ACCEPTED*\n\nI've accepted your offer. Let's proceed with the next steps.`
                                                                     : type === 'REJECT'
-                                                                    ? `❌ *OFFER DECLINED*\n\nThank you for your interest. The offer price doesn't meet our expectations at this time.`
-                                                                    : `↩️ *COUNTER OFFER*\n\nThank you for your offer. I'd like to propose a counter offer of ${counterPrice ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(counterPrice) : '—'}. Please let me know if this works for you.`;
+                                                                        ? `❌ *OFFER DECLINED*\n\nThank you for your interest. The offer price doesn't meet our expectations at this time.`
+                                                                        : `↩️ *COUNTER OFFER*\n\nThank you for your offer. I'd like to propose a counter offer of ${counterPrice ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(counterPrice) : '—'}. Please let me know if this works for you.`;
                                                             await chatService.sendMessage(selectedChat.id, { content: responseText });
-                                                            queryClient.invalidateQueries({ queryKey: ['messages', selectedChat.ids] });
+                                                            queryClient.invalidateQueries({ queryKey: ['messages', selectedChat.ids.join(',')] });
                                                             queryClient.invalidateQueries({ queryKey: ['conversations'] });
                                                         }}
                                                     />

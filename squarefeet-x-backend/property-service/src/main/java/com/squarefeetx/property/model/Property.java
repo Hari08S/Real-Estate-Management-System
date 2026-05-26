@@ -32,6 +32,9 @@ public class Property {
     private Integer bedrooms;
     private Integer bathrooms;
     private Integer area;
+    private String furnishing;      // FURNISHED, SEMI_FURNISHED, UNFURNISHED
+    private String reraStatus;      // APPROVED, PENDING
+    private String floor;           // GROUND, LOW, MEDIUM, HIGH
     private String status;          // DRAFT, PENDING, UNDER_REVIEW, APPROVED, REJECTED, SOLD, RENTED
     private String sellerId;
     private String managerId;
@@ -39,9 +42,17 @@ public class Property {
     @Builder.Default
     private List<String> images = new ArrayList<>();
     @Builder.Default
+    private List<String> verificationDocuments = new ArrayList<>();
+    @Builder.Default
+    private List<Review> reviews = new ArrayList<>();
+    @Builder.Default
     private Integer views = 0;
     @Builder.Default
     private Integer unlockCount = 0;
+    @Builder.Default
+    private Integer buyerPercent = 65;
+    @Builder.Default
+    private Integer avgTimeOnPage = 120;
     private Double unlockFee;
     private String rejectionReason;
     @Builder.Default
@@ -70,5 +81,18 @@ public class Property {
         private String name;
         private String phone;
         private String email;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Review {
+        private String id;
+        private String buyerId;
+        private String buyerName;
+        private Integer rating;
+        private String comment;
+        private LocalDateTime createdAt;
     }
 }

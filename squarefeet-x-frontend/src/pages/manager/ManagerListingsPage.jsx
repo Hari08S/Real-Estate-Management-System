@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { MapPin, CheckCircle2, XCircle, Eye, Inbox, Building2 } from 'lucide-react';
+import { MapPin, CheckCircle2, XCircle, Eye, Inbox, Building2, FileText, ShieldCheck } from 'lucide-react';
 import { managerService } from '../../services/api';
 import { useAuth } from '../../hooks';
 import { PROPERTY_STATUS_LABELS, PROPERTY_STATUS } from '../../constants';
@@ -345,6 +345,42 @@ const ManagerListingsPage = () => {
                                 <p className="text-xs text-text-secondary leading-relaxed bg-surface-hover/30 p-3 rounded-xl border border-surface-border max-h-24 overflow-y-auto">
                                     {inspectListing.description || 'No description provided.'}
                                 </p>
+                            </div>
+
+                            {/* Verification Documents */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-gradient uppercase tracking-wider flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-royal-400" /> Proof of Ownership & Verification Documents
+                                </h4>
+                                {inspectListing.verificationDocuments && inspectListing.verificationDocuments.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {inspectListing.verificationDocuments.map((doc, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={doc}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-between p-3 rounded-xl border border-royal-500/20 bg-royal-500/5 hover:bg-royal-500/10 transition-colors text-xs text-royal-400"
+                                            >
+                                                <span className="flex items-center gap-2 truncate">
+                                                    <FileText className="w-4 h-4 shrink-0" />
+                                                    <span className="truncate font-medium text-text-primary">Ownership Proof #{idx + 1}</span>
+                                                </span>
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-royal-500/20 font-semibold uppercase shrink-0">View Doc</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/5 text-xs text-red-400 flex items-start gap-2">
+                                        <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                        <div>
+                                            <span className="font-semibold block">âš ï¸ No Verification Documents Uploaded</span>
+                                            <span className="text-text-secondary leading-relaxed mt-0.5 block">
+                                                This listing has no proof of ownership. We strongly recommend contacting the seller to request verification documents before approving this listing.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Review Actions */}

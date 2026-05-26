@@ -10,6 +10,12 @@ export const useFilterStore = create((set) => ({
         bedrooms: '',
         bathrooms: '',
         city: '',
+        furnishing: '',    // FURNISHED, SEMI_FURNISHED, UNFURNISHED
+        reraStatus: '',    // APPROVED, PENDING
+        floor: '',         // GROUND, LOW, MEDIUM, HIGH
+        distance: '',      // Distance in km (2, 5, 10, 20)
+        pinnedLat: '',
+        pinnedLng: '',
         sortBy: 'createdAt',
         sortOrder: 'desc',
     },
@@ -28,6 +34,12 @@ export const useFilterStore = create((set) => ({
                 bedrooms: '',
                 bathrooms: '',
                 city: '',
+                furnishing: '',
+                reraStatus: '',
+                floor: '',
+                distance: '',
+                pinnedLat: '',
+                pinnedLng: '',
                 sortBy: 'createdAt',
                 sortOrder: 'desc',
             },
