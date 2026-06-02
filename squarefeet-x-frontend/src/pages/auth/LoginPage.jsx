@@ -136,10 +136,10 @@ const LoginPage = () => {
                     <div className="relative z-10 flex items-center justify-center p-12 w-full">
                         <div className="text-center max-w-lg">
                             <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-royal-600 to-gold-500 flex items-center justify-center animate-float shadow-2xl shadow-royal-500/30">
-                                <span className="text-3xl font-display font-bold text-text-primary">SX</span>
+                                <span className="text-3xl font-display font-bold text-white">SX</span>
                             </div>
-                            <h2 className="text-4xl font-display font-bold text-text-primary mb-4">Every Square Foot.<br /><span className="text-gradient">Zero Commission.</span></h2>
-                            <p className="text-text-secondary text-lg leading-relaxed">Commission-free real estate with manager-verified listings. Pay only to unlock.</p>
+                            <h2 className="text-4xl font-display font-bold text-white mb-4">Every Square Foot.<br /><span className="text-gradient">Zero Commission.</span></h2>
+                            <p className="text-gray-300 text-lg leading-relaxed">Commission-free real estate with manager-verified listings. Pay only to unlock.</p>
                         </div>
                     </div>
                 </div>

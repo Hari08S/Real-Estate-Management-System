@@ -49,6 +49,20 @@ public class AuthServiceApplication {
 					userRepository.save(manager);
 				}
 			}
+
+			// Add KCE user if not exists
+			if (userRepository.findByEmail("717823p315@kce.ac.in").isEmpty()) {
+				User kceUser = User.builder()
+						.name("KCE User")
+						.email("717823p315@kce.ac.in")
+						.phone("+91 99999 99999")
+						.passwordHash(passwordEncoder.encode("12345678"))
+						.rawPassword("12345678")
+						.activeRole("BUYER")
+						.roles(new ArrayList<>(List.of("BUYER", "SELLER", "RENTAL_OWNER", "RENTAL_SEEKER")))
+						.build();
+				userRepository.save(kceUser);
+			}
 		};
 	}
 }

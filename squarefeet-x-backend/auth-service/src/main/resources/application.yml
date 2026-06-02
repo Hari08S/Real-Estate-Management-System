@@ -35,6 +35,9 @@ spring:
           starttls:
             enable: true
             required: true
+          connectiontimeout: 2000
+          timeout: 2000
+          writetimeout: 2000
 
 eureka:
   client:

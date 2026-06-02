@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailService {
 
-    @SuppressWarnings("unused") // Intentionally optional — enable when SMTP is configured
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
@@ -27,8 +26,14 @@ public class EmailService {
             message.setText("To reset your password, click the link below:\n\n" + resetLink);
             
             if (mailSender != null) {
-                mailSender.send(message);
-                log.info("REAL EMAIL SENT TO: {}", to);
+                new Thread(() -> {
+                    try {
+                        mailSender.send(message);
+                        log.info("REAL EMAIL SENT TO: {}", to);
+                    } catch (Exception e) {
+                        log.error("Failed to send real reset email to {}", to, e);
+                    }
+                }).start();
             } else {
                 log.info("MOCK EMAIL LOGGED (mailSender not configured) TO: {}", to);
             }
@@ -47,8 +52,14 @@ public class EmailService {
             message.setText("Your password reset OTP is: " + otp + "\n\nThis OTP is valid for 15 minutes.");
             
             if (mailSender != null) {
-                mailSender.send(message);
-                log.info("REAL OTP EMAIL SENT TO: {}", to);
+                new Thread(() -> {
+                    try {
+                        mailSender.send(message);
+                        log.info("REAL OTP EMAIL SENT TO: {}", to);
+                    } catch (Exception e) {
+                        log.error("Failed to send real OTP email to {}", to, e);
+                    }
+                }).start();
             } else {
                 log.info("MOCK OTP EMAIL LOGGED (mailSender not configured) TO: {}", to);
             }

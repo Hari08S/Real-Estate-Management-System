@@ -29,7 +29,7 @@ const ComparePropertiesPage = () => {
     }
 
     return (
-        <div className="page-container py-10">
+        <div className="page-container pt-28 pb-10">
             <SEOHead title="Compare Properties" />
             
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
@@ -59,7 +59,7 @@ const ComparePropertiesPage = () => {
             <div className="overflow-x-auto pb-6">
                 <div className="min-w-[800px] flex gap-6">
                     {/* Feature Labels Column */}
-                    <div className="w-48 shrink-0 flex flex-col pt-48 space-y-6">
+                    <div className="w-48 shrink-0 flex flex-col pt-[272px] space-y-6">
                         <div className="h-14 flex items-center font-semibold text-text-primary border-b border-surface-border">Price</div>
                         <div className="h-14 flex items-center font-semibold text-text-primary border-b border-surface-border">Price / sq.ft</div>
                         <div className="h-14 flex items-center font-semibold text-text-primary border-b border-surface-border">Location Score</div>
@@ -110,7 +110,7 @@ const ComparePropertiesPage = () => {
                                     </button>
                                 </div>
                                 
-                                <Link to={`/properties/${property.id}`} className="block mb-6">
+                                <Link to={`/properties/${property.id}`} className="block h-14 mb-6">
                                     <h3 className="text-lg font-display font-semibold text-text-primary line-clamp-2 hover:text-royal-500 transition-colors">
                                         {property.title}
                                     </h3>

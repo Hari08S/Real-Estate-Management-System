@@ -2,6 +2,17 @@
 
 export const MOCK_USERS = [
     {
+        id: 'user_kce_1',
+        name: 'KCE User',
+        email: '717823p315@kce.ac.in',
+        phone: '+91 99999 99999',
+        password: '12345678',
+        activeRole: 'BUYER',
+        roles: ['BUYER', 'SELLER', 'RENTAL_OWNER', 'RENTAL_SEEKER'],
+        avatar: null,
+        createdAt: '2026-05-26T00:00:00Z',
+    },
+    {
         id: '7a55e975-edde-4597-b98a-9ff567834966',
         name: 'Mani',
         email: 'mani@gmail.com',

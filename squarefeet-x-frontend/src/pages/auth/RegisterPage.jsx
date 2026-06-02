@@ -57,10 +57,10 @@ const RegisterPage = () => {
                     <div className="relative z-10 flex items-center justify-center p-12 w-full">
                         <div className="text-center max-w-lg">
                             <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-gold-500 to-royal-600 flex items-center justify-center animate-float shadow-2xl shadow-gold-500/20">
-                                <span className="text-3xl font-display font-bold text-text-primary">SX</span>
+                                <span className="text-3xl font-display font-bold text-white">SX</span>
                             </div>
-                            <h2 className="text-4xl font-display font-bold text-text-primary mb-4">Join the<br /><span className="text-gradient">Revolution</span></h2>
-                            <p className="text-text-secondary text-lg leading-relaxed">List properties for free. Buy with zero commissions. Only pay to unlock seller details.</p>
+                            <h2 className="text-4xl font-display font-bold text-white mb-4">Join the<br /><span className="text-gradient">Revolution</span></h2>
+                            <p className="text-gray-300 text-lg leading-relaxed">List properties for free. Buy with zero commissions. Only pay to unlock seller details.</p>
                         </div>
                     </div>
                 </div>

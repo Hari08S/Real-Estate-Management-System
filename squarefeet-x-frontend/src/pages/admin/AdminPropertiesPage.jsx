@@ -27,7 +27,7 @@ const AdminPropertiesPage = () => {
             setActiveTab('RENT');
         } else if (typeParam === 'sale') {
             setActiveTab('SALE');
-        } else if (typeParam === 'all') {
+        } else {
             setActiveTab('ALL');
         }
     }, [typeParam]);
@@ -139,7 +139,7 @@ const AdminPropertiesPage = () => {
                                         </td>
                                     </tr>
                                 ) : properties.map((p) => (
-                                    <tr key={p.id} className="hover:bg-surface-hover/50 transition-colors">
+                                    <tr key={p.id} onClick={() => navigate(`/properties/${p.id}`)} className="hover:bg-surface-hover/50 transition-colors cursor-pointer">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
                                                 <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=80'} alt="" className="w-10 h-10 rounded-lg object-cover" />
@@ -154,7 +154,7 @@ const AdminPropertiesPage = () => {
                                             <Badge variant="royal" className="ml-2">{p.listingType}</Badge>
                                         </td>
                                         <td className="p-4 text-sm font-semibold text-gradient">{formatCurrency(p.price || p.monthlyRent || p.leaseAmount)}</td>
-                                        <td className="p-4">
+                                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
                                             <select
                                                 value={p.status}
                                                 onChange={(e) => statusMutation.mutate({ id: p.id, status: e.target.value })}
@@ -166,7 +166,7 @@ const AdminPropertiesPage = () => {
                                             </select>
                                         </td>
                                         <td className="p-4 text-xs text-text-muted">{formatDate(p.createdAt)}</td>
-                                        <td className="p-4">
+                                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-1">
                                                 <Link to={`/properties/${p.id}`} className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all">
                                                     <Eye className="w-4 h-4" />

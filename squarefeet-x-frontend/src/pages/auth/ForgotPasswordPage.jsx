@@ -138,6 +138,8 @@ const ForgotPasswordPage = () => {
                                         </div>
                                     </div>
 
+
+
                                     <div className="space-y-1.5">
                                         <label className="block text-sm font-medium text-text-secondary">New Password</label>
                                         <div className="relative">
