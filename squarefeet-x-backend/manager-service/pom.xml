@@ -11,7 +11,7 @@
 	<groupId>com.squarefeetx</groupId>
 	<artifactId>manager-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
+	<name>manager-service</name>
 	<description/>
 	<url/>
 	<licenses>

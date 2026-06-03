@@ -11,7 +11,7 @@
 	<groupId>com.squarefeetx</groupId>
 	<artifactId>api-gateway</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
+	<name>api-gateway</name>
 	<description/>
 	<url/>
 	<licenses>
