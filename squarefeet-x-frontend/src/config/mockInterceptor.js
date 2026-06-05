@@ -203,6 +203,15 @@ const routeHandlers = {
         if (Array.isArray(body.images)) merged.images = body.images;
         if (Array.isArray(body.verificationDocuments)) merged.verificationDocuments = body.verificationDocuments;
         if (Array.isArray(body.reviews)) merged.reviews = body.reviews;
+        
+        const isAdminOrManager = currentUser?.activeRole === 'ADMIN' || currentUser?.activeRole === 'MANAGER';
+        if (!isAdminOrManager && (properties[idx].status === 'REJECTED' || properties[idx].status === 'DRAFT')) {
+            merged.status = 'PENDING';
+            merged.rejectionReason = null;
+            if (!merged.statusTimestamps) merged.statusTimestamps = {};
+            merged.statusTimestamps.PENDING = new Date().toISOString();
+        }
+
         properties[idx] = merged;
         return mockResponse(properties[idx]);
     },
@@ -427,6 +436,39 @@ const routeHandlers = {
     'GET /manager/cities': async () => mockResponse({ cities: currentUser?.cities || [] }),
     'GET /manager/listings': async () => mockResponse({ properties: properties.filter((p) => ['PENDING', 'UNDER_REVIEW'].includes(p.status)) }),
     'GET /manager/unassigned': async () => mockResponse({ properties: properties.filter((p) => p.status === 'PENDING') }),
+    'PUT /manager/:id/claim': async (_, params) => {
+        const idx = properties.findIndex((x) => x.id === params.id);
+        if (idx < 0) throw { response: { status: 404, data: { message: 'Property not found' } } };
+        properties[idx].status = 'UNDER_REVIEW';
+        if (!properties[idx].statusTimestamps) properties[idx].statusTimestamps = {};
+        properties[idx].statusTimestamps.UNDER_REVIEW = new Date().toISOString();
+        return mockResponse({ message: 'Listing claimed' });
+    },
+    'PUT /manager/:id/review': async (body, params) => {
+        const idx = properties.findIndex((x) => x.id === params.id);
+        if (idx < 0) throw { response: { status: 404, data: { message: 'Property not found' } } };
+        const action = (body.action || '').toUpperCase();
+        const status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+        properties[idx].status = status;
+        if (status === 'REJECTED') {
+            properties[idx].rejectionReason = body.reason || body.rejectionReason || 'Rejected by City Manager';
+        } else {
+            properties[idx].rejectionReason = null;
+        }
+        if (!properties[idx].statusTimestamps) properties[idx].statusTimestamps = {};
+        properties[idx].statusTimestamps[status] = new Date().toISOString();
+        return mockResponse({ message: 'Listing reviewed' });
+    },
+    'PUT /manager/:id/status': async (body, params) => {
+        const idx = properties.findIndex((x) => x.id === params.id);
+        if (idx < 0) throw { response: { status: 404, data: { message: 'Property not found' } } };
+        const status = body.status;
+        properties[idx].status = status;
+        properties[idx].rejectionReason = body.reason || 'Updated by City Manager';
+        if (!properties[idx].statusTimestamps) properties[idx].statusTimestamps = {};
+        properties[idx].statusTimestamps[status] = new Date().toISOString();
+        return mockResponse({ message: 'Status updated' });
+    },
 
     // ── Admin ──
     'GET /admin/dashboard': async () => mockResponse({

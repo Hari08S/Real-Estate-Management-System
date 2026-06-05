@@ -100,6 +100,51 @@ const RouteMapPage = () => {
     const [toSuggestions, setToSuggestions] = useState([]);
     const [isLocating, setIsLocating] = useState(false);
 
+    // OSRM Real Routing States
+    const [routeGeometry, setRouteGeometry] = useState(null);
+    const [roadDistance, setRoadDistance] = useState(null);
+    const [roadDuration, setRoadDuration] = useState(null);
+    const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+
+    useEffect(() => {
+        if (!fromCoords || !toCoords) {
+            setRouteGeometry(null);
+            setRoadDistance(null);
+            setRoadDuration(null);
+            return;
+        }
+
+        const fetchRoute = async () => {
+            setIsLoadingRoute(true);
+            try {
+                const [fromLat, fromLng] = fromCoords;
+                const [toLat, toLng] = toCoords;
+                const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    const coords = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+                    setRouteGeometry(coords);
+                    setRoadDistance((route.distance / 1000).toFixed(2));
+                    setRoadDuration(Math.round(route.duration / 60));
+                } else {
+                    throw new Error('OSRM route code not Ok');
+                }
+            } catch (err) {
+                console.error('Error fetching route from OSRM, falling back to Haversine:', err);
+                const straightDist = calculateDistance(fromCoords[0], fromCoords[1], toCoords[0], toCoords[1]);
+                setRoadDistance(straightDist);
+                setRoadDuration(straightDist ? Math.round(parseFloat(straightDist) * 1.5 + 5) : null);
+                setRouteGeometry([fromCoords, toCoords]);
+            } finally {
+                setIsLoadingRoute(false);
+            }
+        };
+
+        fetchRoute();
+    }, [fromCoords, toCoords]);
+
     // Debounce timer refs
     const fromTimerRef = useRef(null);
     const toTimerRef = useRef(null);
@@ -234,16 +279,14 @@ const RouteMapPage = () => {
         setToDetails(null);
         setFromSuggestions([]);
         setToSuggestions([]);
+        setRouteGeometry(null);
+        setRoadDistance(null);
+        setRoadDuration(null);
     };
 
-    // Derived values
-    const distance = fromCoords && toCoords
-        ? calculateDistance(fromCoords[0], fromCoords[1], toCoords[0], toCoords[1])
-        : null;
-
-    const estDrivingTime = distance
-        ? Math.round(parseFloat(distance) * 1.5 + 5) // Mock travel time logic based on distance
-        : null;
+    // Derived values using OSRM results
+    const distance = roadDistance;
+    const estDrivingTime = roadDuration;
 
     return (
         <>
@@ -410,13 +453,23 @@ const RouteMapPage = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-surface-card p-3 rounded-xl border border-surface-border/50 text-center">
                                             <p className="text-[10px] text-text-muted font-medium uppercase tracking-wider">Distance</p>
-                                            <p className="text-xl font-bold text-gradient mt-1">{distance} km</p>
+                                            <p className="text-xl font-bold text-gradient mt-1">
+                                                {isLoadingRoute ? (
+                                                    <span className="inline-block animate-pulse text-sm text-text-muted">Calculating...</span>
+                                                ) : (
+                                                    `${distance} km`
+                                                )}
+                                            </p>
                                         </div>
                                         <div className="bg-surface-card p-3 rounded-xl border border-surface-border/50 text-center">
                                             <p className="text-[10px] text-text-muted font-medium uppercase tracking-wider">Est. Driving Time</p>
                                             <p className="text-xl font-bold text-gradient mt-1 flex items-center justify-center gap-1">
                                                 <Car className="w-4 h-4 text-gold-400" />
-                                                {estDrivingTime} mins
+                                                {isLoadingRoute ? (
+                                                    <span className="inline-block animate-pulse text-sm text-text-muted">Estimating...</span>
+                                                ) : (
+                                                    `${estDrivingTime} mins`
+                                                )}
                                             </p>
                                         </div>
                                     </div>
@@ -525,10 +578,10 @@ const RouteMapPage = () => {
                                         </Popup>
                                     </Marker>
                                 )}
-                                {fromCoords && toCoords && (
+                                {routeGeometry && (
                                     <Polyline
-                                        positions={[fromCoords, toCoords]}
-                                        pathOptions={{ color: '#3b82f6', weight: 4, dashArray: '5, 10' }}
+                                        positions={routeGeometry}
+                                        pathOptions={{ color: '#3b82f6', weight: 5, opacity: 0.8 }}
                                     />
                                 )}
                                 <MapBoundsSetter fromCoords={fromCoords} toCoords={toCoords} />

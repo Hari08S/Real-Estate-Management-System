@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -95,6 +95,7 @@ const STEPS = ['Basic Info', 'Details', 'Location', 'Images', 'Documents'];
 
 const CreateListingPage = () => {
     const { id } = useParams();
+    const queryClient = useQueryClient();
     const isEditMode = Boolean(id);
     const [step, setStep] = useState(0);
     const [images, setImages] = useState([]);
@@ -129,6 +130,9 @@ const CreateListingPage = () => {
             if (propertyData.images) {
                 setExistingImages(propertyData.images);
             }
+            if (propertyData.verificationDocuments) {
+                setExistingDocs(propertyData.verificationDocuments);
+            }
             // Pre-populate map position from saved location
             if (propertyData.location?.lat && propertyData.location?.lng) {
                 setMapCenter([propertyData.location.lat, propertyData.location.lng]);
@@ -151,11 +155,53 @@ const CreateListingPage = () => {
         if (!mapSearchQuery.trim()) return;
         setIsSearchingMap(true);
         try {
+            // Standard OSM Geocoding request
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(mapSearchQuery)}&limit=5`);
             const data = await res.json();
-            setMapSearchSuggestions(data);
-            if (data.length === 0) {
-                toast.error('No locations found. Try a different search.');
+            
+            if (data.length > 0) {
+                setMapSearchSuggestions(data);
+            } else {
+                // Fallback 1: Try broader parts if query contains comma (e.g. "salem,thunbathulipatti" -> search "salem")
+                const commaParts = mapSearchQuery.split(',').map(p => p.trim()).filter(Boolean);
+                if (commaParts.length > 1) {
+                    for (const partQuery of commaParts) {
+                        const fbResPart = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(partQuery)}&limit=5`);
+                        const fbDataPart = await fbResPart.json();
+                        if (fbDataPart.length > 0) {
+                            setMapSearchSuggestions(fbDataPart);
+                            toast.success(`Showing results for broader area: "${partQuery}"`);
+                            setIsSearchingMap(false);
+                            return;
+                        }
+                    }
+                }
+
+                // Fallback 2: Fall back to fields filled in form (Pincode, City/District + State)
+                const cityVal = watch('city');
+                const stateVal = watch('state');
+                const pincodeVal = watch('pincode');
+                
+                let fallbackQueries = [];
+                if (pincodeVal) fallbackQueries.push(`${pincodeVal}, India`);
+                if (cityVal && stateVal) fallbackQueries.push(`${cityVal}, ${stateVal}, India`);
+                else if (cityVal) fallbackQueries.push(`${cityVal}, India`);
+                else if (stateVal) fallbackQueries.push(`${stateVal}, India`);
+
+                for (const fbQ of fallbackQueries) {
+                    const fbRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fbQ)}&limit=3`);
+                    const fbData = await fbRes.json();
+                    if (fbData.length > 0) {
+                        const lat = parseFloat(fbData[0].lat);
+                        const lng = parseFloat(fbData[0].lon);
+                        setMapCenter([lat, lng]);
+                        toast.success(`Exact location not found. Centered map on: ${fbData[0].display_name}. Click map to pinpoint.`);
+                        setIsSearchingMap(false);
+                        return;
+                    }
+                }
+
+                toast.error('Location not found. Please click the map to pin manually.');
             }
         } catch (err) {
             console.error("Search failed", err);
@@ -226,9 +272,12 @@ const CreateListingPage = () => {
 
             if (isEditMode) {
                 await propertyService.update(id, payload);
+                queryClient.invalidateQueries({ queryKey: ['my-listings'] });
+                queryClient.invalidateQueries({ queryKey: ['property-edit', id] });
                 toast.success('Property updated successfully!');
             } else {
                 await propertyService.create(payload);
+                queryClient.invalidateQueries({ queryKey: ['my-listings'] });
                 toast.success('Property listed successfully! Pending manager review.');
             }
             if (user?.activeRole === 'ADMIN') {
@@ -289,6 +338,18 @@ const CreateListingPage = () => {
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-2xl font-display font-bold text-text-primary mb-2">{isEditMode ? "Edit Listing" : "Create New Listing"}</h1>
                 <p className="text-text-secondary mb-8">{isEditMode ? "Update your property details" : "List your property for free — zero charges"}</p>
+
+                {isEditMode && propertyData?.status === 'REJECTED' && propertyData?.rejectionReason && (
+                    <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                        <h4 className="font-semibold mb-1">Listing Rejected by Manager</h4>
+                        <p className="text-xs text-text-secondary">
+                            <strong>Reason:</strong> {propertyData.rejectionReason}
+                        </p>
+                        <p className="text-xs text-text-muted mt-2">
+                            Please make necessary edits and save your changes. Saving will automatically re-submit this property to the manager pool for review.
+                        </p>
+                    </div>
+                )}
 
                 {/* Stepper */}
                 <div className="flex items-center gap-2 mb-8">
@@ -398,22 +459,34 @@ const CreateListingPage = () => {
                                         <div className="border border-surface-border rounded-xl overflow-hidden shadow-sm h-[350px] relative">
                                             {/* Map Search Overlay */}
                                             <div className="absolute top-3 left-12 z-[1000] w-72 max-w-[calc(100%-60px)]">
-                                                <form onSubmit={handleMapSearch} className="flex gap-1.5 bg-surface-card/90 backdrop-blur-md border border-surface-border p-1.5 rounded-xl shadow-lg animate-fadeIn">
+                                                <div className="flex gap-1.5 bg-surface-card/90 backdrop-blur-md border border-surface-border p-1.5 rounded-xl shadow-lg animate-fadeIn">
                                                     <input
                                                         type="text"
                                                         value={mapSearchQuery}
                                                         onChange={(e) => setMapSearchQuery(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleMapSearch();
+                                                            }
+                                                        }}
                                                         placeholder="Search location to pin..."
                                                         className="flex-1 min-w-0 bg-surface-hover/80 border border-surface-border/50 text-[11px] px-3 py-1.5 rounded-lg text-text-primary focus:outline-none focus:ring-1 focus:ring-royal-500"
                                                     />
                                                     <button
-                                                        type="submit"
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleMapSearch();
+                                                        }}
                                                         disabled={isSearchingMap}
                                                         className="bg-royal-600 hover:bg-royal-500 disabled:bg-surface-hover text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors duration-150"
                                                     >
                                                         {isSearchingMap ? '...' : 'Search'}
                                                     </button>
-                                                </form>
+                                                </div>
                                                 {mapSearchSuggestions.length > 0 && (
                                                     <ul className="absolute z-[1001] w-full bg-surface-card/95 backdrop-blur-md border border-surface-border rounded-xl shadow-2xl max-h-40 overflow-y-auto divide-y divide-surface-border mt-1">
                                                         {mapSearchSuggestions.map((sug, i) => (

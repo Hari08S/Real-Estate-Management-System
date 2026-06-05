@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminService } from '../../services/api';
-import { Building2, Search, Edit3, Trash2, Eye } from 'lucide-react';
+import { adminService, chatService } from '../../services/api';
+import { Building2, Search, Edit3, Trash2, Eye, MessageSquare } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -20,6 +20,7 @@ const AdminPropertiesPage = () => {
     const [activeTab, setActiveTab] = useState(typeParam === 'rent' ? 'RENT' : typeParam === 'sale' ? 'SALE' : 'ALL');
     const [search, setSearch] = useState('');
     const [deleteId, setDeleteId] = useState(null);
+    const [messagingId, setMessagingId] = useState(null);
     const queryClient = useQueryClient();
 
     useEffect(() => {
@@ -127,13 +128,14 @@ const AdminPropertiesPage = () => {
                                     <th className="text-left text-xs font-medium text-text-muted p-4 uppercase">Price</th>
                                     <th className="text-left text-xs font-medium text-text-muted p-4 uppercase">Status</th>
                                     <th className="text-left text-xs font-medium text-text-muted p-4 uppercase">Created</th>
+                                    <th className="text-center text-xs font-medium text-text-muted p-4 uppercase">Message</th>
                                     <th className="text-right text-xs font-medium text-text-muted p-4 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-surface-border">
                                 {properties.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="p-8 text-center text-text-secondary">
+                                        <td colSpan={7} className="p-8 text-center text-text-secondary">
                                             <Building2 className="w-10 h-10 text-text-muted mx-auto mb-3" />
                                             No properties found
                                         </td>
@@ -166,6 +168,46 @@ const AdminPropertiesPage = () => {
                                             </select>
                                         </td>
                                         <td className="p-4 text-xs text-text-muted">{formatDate(p.createdAt)}</td>
+                                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex justify-center">
+                                                <button
+                                                    disabled={messagingId === p.id}
+                                                    onClick={async () => {
+                                                        if (!p.sellerId) {
+                                                            toast.error('Seller info not available for this property');
+                                                            return;
+                                                        }
+                                                        setMessagingId(p.id);
+                                                        try {
+                                                            await chatService.startConversation({
+                                                                propertyId: p.id,
+                                                                propertyTitle: p.title,
+                                                                otherUserId: p.sellerId,
+                                                                message: `Hello, I'm the admin reaching out regarding your property listing: "${p.title}".`
+                                                            });
+                                                            toast.success('Conversation started! Opening chat...');
+                                                            navigate(`/admin/chat?userId=${p.sellerId}`);
+                                                        } catch (err) {
+                                                            if (err?.response?.status === 409 || err?.response?.data?.conversationId) {
+                                                                navigate(`/admin/chat?userId=${p.sellerId}`);
+                                                            } else {
+                                                                toast.error('Failed to start conversation');
+                                                            }
+                                                        } finally {
+                                                            setMessagingId(null);
+                                                        }
+                                                    }}
+                                                    className="p-2 rounded-lg text-royal-400 hover:text-royal-300 hover:bg-royal-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title={`Message seller of ${p.title}`}
+                                                >
+                                                    {messagingId === p.id ? (
+                                                        <div className="w-4 h-4 border-2 border-royal-400 border-t-transparent rounded-full animate-spin" />
+                                                    ) : (
+                                                        <MessageSquare className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </td>
                                         <td className="p-4" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-1">
                                                 <Link to={`/properties/${p.id}`} className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all">

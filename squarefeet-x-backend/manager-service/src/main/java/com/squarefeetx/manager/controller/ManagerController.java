@@ -71,7 +71,11 @@ public class ManagerController {
         String status = "APPROVE".equals(action) ? "APPROVED" : "REJECTED";
         Map<String, String> reqBody = new HashMap<>();
         reqBody.put("status", status);
-        reqBody.put("reason", body.get("reason"));
+        String reason = body.get("reason");
+        if (reason == null) {
+            reason = body.get("rejectionReason");
+        }
+        reqBody.put("reason", reason);
         restTemplate.put(propertyServiceUrl + "/api/properties/internal/" + id + "/status", reqBody);
         return ResponseEntity.ok(Map.of("message", "Listing " + action.toLowerCase() + "d"));
     }

@@ -276,17 +276,20 @@ const PropertyDetailPage = () => {
             let otherUserId = property.sellerId;
             let targetLabel = 'seller';
 
-            try {
-                const state = property.location?.state || '';
-                if (state) {
-                    const managerRes = await managerService.getManagerByCity(state);
-                    if (managerRes.data?.manager?.id) {
-                        otherUserId = managerRes.data.manager.id;
-                        targetLabel = 'state manager';
+            // Admin messages seller directly; other roles try to find area manager
+            if (user?.activeRole !== 'ADMIN') {
+                try {
+                    const state = property.location?.state || '';
+                    if (state) {
+                        const managerRes = await managerService.getManagerByCity(state);
+                        if (managerRes.data?.manager?.id) {
+                            otherUserId = managerRes.data.manager.id;
+                            targetLabel = 'state manager';
+                        }
                     }
+                } catch (err) {
+                    console.error("Failed to fetch state manager, falling back to seller", err);
                 }
-            } catch (err) {
-                console.error("Failed to fetch state manager, falling back to seller", err);
             }
 
             const formattedMessage = `✉️ *NEW PROPERTY INQUIRY*\n\n*Name:* ${inquiryName}\n*Phone:* ${inquiryPhone}\n*Message:* ${inquiryMsg}\n*Property:* ${property.title}`;
@@ -326,17 +329,20 @@ const PropertyDetailPage = () => {
             let otherUserId = property.sellerId;
             let targetLabel = 'seller';
 
-            try {
-                const state = property.location?.state || '';
-                if (state) {
-                    const managerRes = await managerService.getManagerByCity(state);
-                    if (managerRes.data?.manager?.id) {
-                        otherUserId = managerRes.data.manager.id;
-                        targetLabel = 'state manager';
+            // Admin messages seller directly; other roles try to find area manager
+            if (user?.activeRole !== 'ADMIN') {
+                try {
+                    const state = property.location?.state || '';
+                    if (state) {
+                        const managerRes = await managerService.getManagerByCity(state);
+                        if (managerRes.data?.manager?.id) {
+                            otherUserId = managerRes.data.manager.id;
+                            targetLabel = 'state manager';
+                        }
                     }
+                } catch (err) {
+                    console.error("Failed to fetch state manager, falling back to seller", err);
                 }
-            } catch (err) {
-                console.error("Failed to fetch state manager, falling back to seller", err);
             }
 
             const formattedMessage = `📅 *SITE VISIT REQUESTED*\n\n*Name:* ${visitName}\n*Phone:* ${visitPhone}\n*Date:* ${visitDate}\n*Time:* ${visitTimeSlot}\n*Type:* ${visitType === 'IN_PERSON' ? 'In-Person Visit' : 'Virtual (Video Call)'}\n*Property:* ${property.title}`;
@@ -976,16 +982,19 @@ const PropertyDetailPage = () => {
                     onClose={() => setShowOfferModal(false)}
                     onSubmit={async ({ offerPrice, message }) => {
                         let otherUserId = property.sellerId;
-                        try {
-                            const state = property.location?.state || '';
-                            if (state) {
-                                const managerRes = await managerService.getManagerByCity(state);
-                                if (managerRes.data?.manager?.id) {
-                                    otherUserId = managerRes.data.manager.id;
+                        // Admin messages seller directly; other roles try to find area manager
+                        if (user?.activeRole !== 'ADMIN') {
+                            try {
+                                const state = property.location?.state || '';
+                                if (state) {
+                                    const managerRes = await managerService.getManagerByCity(state);
+                                    if (managerRes.data?.manager?.id) {
+                                        otherUserId = managerRes.data.manager.id;
+                                    }
                                 }
+                            } catch (err) {
+                                console.error("Failed to fetch state manager, falling back to seller", err);
                             }
-                        } catch (err) {
-                            console.error("Failed to fetch state manager, falling back to seller", err);
                         }
 
                         try {

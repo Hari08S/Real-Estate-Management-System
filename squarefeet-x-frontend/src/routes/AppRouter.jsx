@@ -194,6 +194,7 @@ const router = createBrowserRouter([
                 children: [
                     { path: 'dashboard', element: <SuspenseWrapper><AdminDashboard /></SuspenseWrapper> },
                     { path: 'analytics', element: <SuspenseWrapper><AdminDashboard /></SuspenseWrapper> },
+                    { path: 'favorites', element: <SuspenseWrapper><SavedPropertiesPage /></SuspenseWrapper> },
                     { path: 'properties', element: <SuspenseWrapper><AdminPropertiesPage /></SuspenseWrapper> },
                     { path: 'properties/edit/:id', element: <SuspenseWrapper><CreateListingPage /></SuspenseWrapper> },
                     { path: 'users', element: <SuspenseWrapper><UserManagement /></SuspenseWrapper> },

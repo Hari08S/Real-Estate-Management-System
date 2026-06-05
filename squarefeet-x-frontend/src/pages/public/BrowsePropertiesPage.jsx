@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Search, SlidersHorizontal, X, MapPin, Grid3X3, LayoutList, Clock, Bell, Trash2 } from 'lucide-react';
 import { useFilterStore } from '../../store/filterStore';
@@ -29,6 +30,16 @@ const BrowsePropertiesPage = () => {
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [localSearch, setLocalSearch] = useState('');
     const { filters, setFilter, resetFilters } = useFilterStore();
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const type = searchParams.get('type') || searchParams.get('listingType') || '';
+        if (filters.listingType !== type) {
+            setFilter('listingType', type);
+            setPage(1);
+        }
+    }, [searchParams, setFilter, filters.listingType]);
+
     const { addItem } = useCompareStore();
     const { addSearch, removeSearch, history } = useSearchHistoryStore();
     const { preferences } = useAlertPreferencesStore();

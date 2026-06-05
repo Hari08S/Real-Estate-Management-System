@@ -180,6 +180,16 @@ public class PropertyService {
             throw new RuntimeException("Unauthorized: not the owner");
         }
 
+        if (!isAdminOrManager && ("REJECTED".equals(existing.getStatus()) || "DRAFT".equals(existing.getStatus()))) {
+            existing.setStatus("PENDING");
+            existing.setRejectionReason(null);
+            Map<String, LocalDateTime> timestamps = new HashMap<>(
+                    existing.getStatusTimestamps() != null ? existing.getStatusTimestamps() : Map.of()
+            );
+            timestamps.put("PENDING", LocalDateTime.now());
+            existing.setStatusTimestamps(timestamps);
+        }
+
         if (updates.getTitle() != null) existing.setTitle(updates.getTitle());
         if (updates.getDescription() != null) existing.setDescription(updates.getDescription());
         if (updates.getPropertyType() != null) existing.setPropertyType(updates.getPropertyType());

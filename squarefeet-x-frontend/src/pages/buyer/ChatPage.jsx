@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Send, ArrowLeft, Search, MessageSquare, Phone, MapPin, Bell, X,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { chatService, managerService, userService, adminService } from '../../services/api';
 import { useAuth } from '../../hooks';
+import { useSearchParams } from 'react-router-dom';
 import { formatRelativeTime } from '../../utils';
 import { STATES, getDistricts } from '../../data/indiaLocations';
 import { OfferMessageBubble } from '../../components/property/OfferMessageBubble';
@@ -150,6 +151,10 @@ const ChatPage = () => {
     const isManager = user?.activeRole === 'MANAGER';
     const isSeller = user?.activeRole === 'SELLER' || user?.activeRole === 'RENTAL_OWNER';
 
+    // Support auto-selecting a conversation via URL params (e.g. ?userId=xxx)
+    const [searchParams, setSearchParams] = useSearchParams();
+    const userIdParam = searchParams.get('userId');
+
     const { data: convData } = useQuery({
         queryKey: ['conversations'],
         queryFn: () => chatService.getConversations().then((r) => r.data),
@@ -269,6 +274,20 @@ const ChatPage = () => {
         }
     }, [conversations, selectedChat?.id]);
 
+    // Auto-select conversation when navigated with ?userId=
+    useEffect(() => {
+        if (userIdParam && conversations.length > 0) {
+            const match = conversations.find(c => c.otherUser?.id === userIdParam);
+            if (match) {
+                setSelectedChat(match);
+                // Clean URL param reactively
+                const newParams = new URLSearchParams(searchParams);
+                newParams.delete('userId');
+                setSearchParams(newParams, { replace: true });
+            }
+        }
+    }, [userIdParam, conversations, searchParams, setSearchParams]);
+
     useEffect(() => {
         if (selectedChat && selectedChat.ids) {
             Promise.all(selectedChat.ids.map(id => chatService.markRead(id).catch(() => { })));
@@ -338,8 +357,7 @@ const ChatPage = () => {
     const filteredConvs = conversations.filter((c) => {
         // Active role based filtering to prevent personal chats from leaking into admin/manager dashboards
         if (user?.activeRole === 'ADMIN') {
-            const isAdminRelated = c.propertyId === 'admin-support' || c.propertyTitle?.startsWith('Admin ↔');
-            if (!isAdminRelated) return false;
+            // Admin sees ALL conversations — no filtering
         } else if (user?.activeRole === 'MANAGER') {
             const isManagerRelated = c.propertyTitle?.startsWith('Support —') || c.propertyId === 'admin-support' || c.propertyTitle?.startsWith('Admin ↔');
             if (!isManagerRelated) return false;

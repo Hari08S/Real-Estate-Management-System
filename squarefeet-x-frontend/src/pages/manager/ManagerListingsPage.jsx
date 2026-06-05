@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { MapPin, CheckCircle2, XCircle, Eye, Inbox, Building2, FileText, ShieldCheck } from 'lucide-react';
-import { managerService } from '../../services/api';
+import { managerService, userService } from '../../services/api';
 import { useAuth } from '../../hooks';
 import { PROPERTY_STATUS_LABELS, PROPERTY_STATUS } from '../../constants';
 import { formatCurrency, formatDate } from '../../utils';
@@ -14,6 +14,24 @@ import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import SEOHead from '../../components/common/SEOHead';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+
+const dataURLtoBlobURL = (dataUrl) => {
+    try {
+        const arr = dataUrl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        return URL.createObjectURL(blob);
+    } catch (e) {
+        console.error("Failed to convert data URL to Blob URL", e);
+        return dataUrl;
+    }
+};
 
 const ManagerListingsPage = () => {
     const { user } = useAuth();
@@ -48,6 +66,51 @@ const ManagerListingsPage = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const queryClient = useQueryClient();
 
+    const handleInspect = async (item) => {
+        setInspectListing(item);
+        if (item.sellerId) {
+            try {
+                const res = await userService.getUser(item.sellerId);
+                const sellerData = res.data;
+                if (sellerData) {
+                    setInspectListing((prev) => {
+                        if (prev && prev.id === item.id) {
+                            return {
+                                ...prev,
+                                sellerContact: {
+                                    name: sellerData.name,
+                                    email: sellerData.email,
+                                    phone: sellerData.phone,
+                                }
+                            };
+                        }
+                        return prev;
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load seller details", err);
+            }
+        }
+    };
+
+    const handleViewDoc = (doc) => {
+        if (doc.startsWith('data:')) {
+            try {
+                const blobUrl = dataURLtoBlobURL(doc);
+                window.open(blobUrl, '_blank');
+            } catch (e) {
+                console.error("Failed to open doc as Blob URL", e);
+                const w = window.open();
+                if (w) {
+                    w.document.write(`<iframe src="${doc}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                    w.document.close();
+                }
+            }
+        } else {
+            window.open(doc, '_blank');
+        }
+    };
+
     const { data: listings, isLoading } = useQuery({
         queryKey: ['manager-listings', activeTab],
         queryFn: () =>
@@ -58,7 +121,7 @@ const ManagerListingsPage = () => {
 
     const reviewMutation = useMutation({
         mutationFn: ({ id, action, reason }) =>
-            managerService.reviewListing(id, { action, rejectionReason: reason }),
+            managerService.reviewListing(id, { action, reason, rejectionReason: reason }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['manager-listings'] });
             setReviewModal(null);
@@ -208,7 +271,7 @@ const ManagerListingsPage = () => {
                                                 </>
                                             )}
 
-                                            <Button size="sm" variant="secondary" icon={Eye} onClick={() => setInspectListing(item)}>Inspect Details</Button>
+                                            <Button size="sm" variant="secondary" icon={Eye} onClick={() => handleInspect(item)}>Inspect Details</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -355,19 +418,18 @@ const ManagerListingsPage = () => {
                                 {inspectListing.verificationDocuments && inspectListing.verificationDocuments.length > 0 ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {inspectListing.verificationDocuments.map((doc, idx) => (
-                                            <a
+                                            <button
                                                 key={idx}
-                                                href={doc}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center justify-between p-3 rounded-xl border border-royal-500/20 bg-royal-500/5 hover:bg-royal-500/10 transition-colors text-xs text-royal-400"
+                                                type="button"
+                                                onClick={() => handleViewDoc(doc)}
+                                                className="flex w-full items-center justify-between p-3 rounded-xl border border-royal-500/20 bg-royal-500/5 hover:bg-royal-500/10 transition-colors text-xs text-royal-400 text-left cursor-pointer"
                                             >
                                                 <span className="flex items-center gap-2 truncate">
                                                     <FileText className="w-4 h-4 shrink-0" />
                                                     <span className="truncate font-medium text-text-primary">Ownership Proof #{idx + 1}</span>
                                                 </span>
                                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-royal-500/20 font-semibold uppercase shrink-0">View Doc</span>
-                                            </a>
+                                            </button>
                                         ))}
                                     </div>
                                 ) : (

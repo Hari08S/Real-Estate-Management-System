@@ -58,10 +58,61 @@ const testimonials = [
     { name: 'Sneha Reddy', role: 'Seller', city: 'Hyderabad', text: 'Sold my villa in just 2 weeks through SquareFeet X. The manager verification really builds trust.', rating: 5, gradient: 'from-amber-500 to-rose-600' },
 ];
 
+const plans = [
+    {
+        name: 'Basic / Free',
+        price: '₹0',
+        period: 'forever',
+        desc: 'For individual owners trying out the platform.',
+        features: [
+            '1 Active Property Listing',
+            'Basic Search & Browse',
+            'Direct Buyer Chat (Standard)',
+            'Standard Support',
+        ],
+        buttonText: 'Get Started',
+        buttonVariant: 'outline',
+        color: 'from-surface-card to-surface-hover border-surface-border',
+        popular: false,
+    },
+    {
+        name: 'Standard Pack',
+        price: '₹499',
+        period: 'one-time',
+        desc: 'Perfect for active seekers and fast sellers.',
+        features: [
+            '5 Contact Unlocks (Credits)',
+            '3 Active Property Listings',
+            'Priority Property Verification',
+            'Featured Listing Tag for 7 days',
+            'Email & Chat Support',
+        ],
+        buttonText: 'Purchase Pack',
+        buttonVariant: 'gold',
+        color: 'from-royal-800/40 via-royal-700/30 to-royal-600/20 border-royal-500/30',
+        popular: true,
+    },
+    {
+        name: 'Premium Assist',
+        price: '₹999',
+        period: 'one-time',
+        desc: 'Maximum visibility & dedicated support.',
+        features: [
+            '15 Contact Unlocks (Credits)',
+            '10 Active Property Listings',
+            'Dedicated City Manager Assist',
+            'Featured Listing Tag for 30 days',
+            '24/7 Priority Support Call',
+            'Detailed Property Report PDF',
+        ],
+        buttonText: 'Go Premium',
+        buttonVariant: 'gold',
+        color: 'from-gold-600/30 via-gold-500/20 to-gold-400/10 border-gold-500/30',
+        popular: false,
+    },
+];
+
 const LandingPage = () => {
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
     return (
         <>
             <SEOHead
@@ -195,6 +246,66 @@ const LandingPage = () => {
                                         <h3 className="text-lg font-display font-semibold text-text-primary mb-3">{step.title}</h3>
                                         <p className="text-text-secondary text-sm leading-relaxed max-w-[220px] mx-auto">{step.desc}</p>
                                     </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ===== PRICING ===== */}
+                <section id="pricing" className="py-16 lg:py-20 relative overflow-hidden bg-surface-dark">
+                    <div className="absolute inset-0">
+                        <div className="absolute top-10 right-1/4 w-72 h-72 rounded-full bg-gold-500/5 blur-[100px]" />
+                        <div className="absolute bottom-10 left-1/4 w-72 h-72 rounded-full bg-royal-600/5 blur-[100px]" />
+                    </div>
+                    <div className="relative z-10 page-container">
+                        <motion.div {...fadeUp} className="text-center mb-16 max-w-3xl mx-auto">
+                            <span className="text-sm font-medium text-royal-400 uppercase tracking-widest">Pricing Plans</span>
+                            <h2 className="text-3xl sm:text-4xl font-display font-bold text-text-primary mt-4">
+                                Simple, <span className="text-gradient">Transparent Packages</span>
+                            </h2>
+                            <p className="text-text-secondary mt-5 max-w-2xl mx-auto leading-relaxed">
+                                No commission, no hidden fees. Unlock contact details and feature listings with our simple credit packages.
+                            </p>
+                        </motion.div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
+                            {plans.map((plan, i) => (
+                                <motion.div
+                                    key={plan.name}
+                                    {...stagger}
+                                    transition={{ delay: i * 0.1, duration: 0.5 }}
+                                    className={`relative rounded-3xl bg-gradient-to-b ${plan.color} border p-8 flex flex-col justify-between hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ${plan.popular ? 'shadow-xl shadow-royal-500/10 ring-2 ring-royal-500' : ''}`}
+                                >
+                                    {plan.popular && (
+                                        <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-royal-500 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1 rounded-full shadow-md">
+                                            Most Popular
+                                        </span>
+                                    )}
+                                    <div>
+                                        <h3 className="text-xl font-display font-bold text-text-primary mb-2">{plan.name}</h3>
+                                        <p className="text-xs text-text-muted mb-6">{plan.desc}</p>
+                                        <div className="flex items-baseline gap-1 mb-8">
+                                            <span className="text-4xl sm:text-5xl font-display font-black text-text-primary">{plan.price}</span>
+                                            <span className="text-xs text-text-muted">/ {plan.period}</span>
+                                        </div>
+                                        <ul className="space-y-4 mb-8">
+                                            {plan.features.map((feature) => (
+                                                <li key={feature} className="flex items-start gap-2.5 text-sm text-text-secondary">
+                                                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                                                    <span>{feature}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <Link to="/register" className="w-full">
+                                        <Button
+                                            variant={plan.buttonVariant}
+                                            className="w-full shadow-md"
+                                        >
+                                            {plan.buttonText}
+                                        </Button>
+                                    </Link>
                                 </motion.div>
                             ))}
                         </div>

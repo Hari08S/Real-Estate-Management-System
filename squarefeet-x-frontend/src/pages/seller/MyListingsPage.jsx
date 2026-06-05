@@ -107,7 +107,16 @@ const MyListingsPage = () => {
                                         </td>
                                         <td className="p-4"><Badge variant="royal">{l.listingType}</Badge></td>
                                         <td className="p-4 text-sm font-semibold text-gradient">{formatCurrency(l.price || l.monthlyRent || l.leaseAmount)}</td>
-                                        <td className="p-4"><Badge variant={statusVariant[l.status] || 'default'} dot>{PROPERTY_STATUS_LABELS[l.status]}</Badge></td>
+                                        <td className="p-4">
+                                            <div className="flex flex-col items-start gap-1">
+                                                <Badge variant={statusVariant[l.status] || 'default'} dot>{PROPERTY_STATUS_LABELS[l.status]}</Badge>
+                                                {l.status === 'REJECTED' && l.rejectionReason && (
+                                                    <span className="text-[10px] text-red-400 font-medium leading-normal max-w-[150px] break-words" title={l.rejectionReason}>
+                                                        Reason: {l.rejectionReason}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="p-4 text-xs text-text-muted">{formatDate(l.createdAt)}</td>
                                         <td className="p-4">
                                             <div className="flex items-center justify-end gap-1">

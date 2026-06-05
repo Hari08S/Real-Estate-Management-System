@@ -61,6 +61,7 @@ const roleMenus = {
     [ROLES.ADMIN]: [
         { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { to: '/properties', label: 'Browse', icon: Search },
+        { to: '/admin/favorites', label: 'Favorites', icon: Heart },
         { to: '/admin/properties', label: 'Listings', icon: Building2 },
         { to: '/admin/users', label: 'Users', icon: Users },
         { to: '/admin/managers', label: 'Managers', icon: Shield },

@@ -52,6 +52,7 @@ const sidebarMenus = {
     [ROLES.ADMIN]: [
         { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { to: '/properties', label: 'Browse Properties', icon: Search },
+        { to: '/admin/favorites', label: 'Favourite Properties', icon: Heart },
         { to: '/admin/properties?type=sale', label: 'Seller Properties', icon: Building2 },
         { to: '/admin/properties?type=rent', label: 'Rent Properties', icon: Building2 },
         { to: '/admin/users', label: 'Users', icon: Users },
