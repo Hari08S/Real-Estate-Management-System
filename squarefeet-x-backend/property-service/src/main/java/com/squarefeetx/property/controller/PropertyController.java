@@ -34,11 +34,13 @@ public class PropertyController {
                 org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
                 headers.set("Authorization", authHeader);
                 org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
-                ResponseEntity<Map> response = restTemplate.exchange(
+                org.springframework.core.ParameterizedTypeReference<Map<String, Object>> responseType =
+                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {};
+                ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                     "http://localhost:8005/api/chat/conversations",
                     org.springframework.http.HttpMethod.GET,
                     entity,
-                    Map.class
+                    responseType
                 );
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     List<?> convs = (List<?>) response.getBody().get("conversations");
