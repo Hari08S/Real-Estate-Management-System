@@ -7,6 +7,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { useInitAuth } from '../hooks';
 import ScrollToTop from '../components/common/ScrollToTop';
+import ApiConsole from '../components/common/ApiConsole';
 
 // Lazy imports
 const LandingPage = lazy(() => import('../pages/public/LandingPage'));
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
             <>
                 <ScrollToTop />
                 <Outlet />
+                <ApiConsole />
             </>
         ),
         children: [
