@@ -38,14 +38,7 @@ const SellerDashboard = () => {
     if (isLoading) return <DashboardSkeleton />;
 
     const rawListings = data?.properties || [];
-    const listings = rawListings.filter((l) => {
-        if (user?.activeRole === 'SELLER') {
-            return l.listingType === 'SALE';
-        } else if (user?.activeRole === 'RENTAL_OWNER') {
-            return l.listingType === 'RENT' || l.listingType === 'LEASE';
-        }
-        return true;
-    });
+    const listings = rawListings;
 
     const stats = {
         totalListings: listings.length,
@@ -170,9 +163,9 @@ const SellerDashboard = () => {
 
                                                 {/* Seeker Demographics & Time-on-page */}
                                                 {(() => {
-                                                    const buyersPercent = l.buyerPercent != null ? l.buyerPercent : (55 + ((l.title.length * 7) % 25));
-                                                    const seekersPercent = 100 - buyersPercent;
-                                                    const avgTimeSecs = l.avgTimeOnPage != null ? l.avgTimeOnPage : (45 + ((l.title.length * 13) % 180));
+                                                    const buyersPercent = l.buyerPercent !== undefined && l.buyerPercent !== null ? l.buyerPercent : 0;
+                                                    const seekersPercent = Math.max(0, 100 - buyersPercent);
+                                                    const avgTimeSecs = l.avgTimeOnPage !== undefined && l.avgTimeOnPage !== null ? l.avgTimeOnPage : 0;
                                                     const avgTimeStr = `${Math.floor(avgTimeSecs / 60)}m ${avgTimeSecs % 60}s`;
                                                     return (
                                                         <div className="bg-surface-hover/20 rounded-xl p-3 border border-surface-border space-y-2">

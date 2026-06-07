@@ -40,6 +40,8 @@ const LocationSelector = ({ onContact, isPending }) => {
             </p>
             <div className="relative">
                 <select
+                    id="state-select"
+                    name="state"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     className="w-full bg-surface-hover border border-surface-border rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-royal-500 appearance-none cursor-pointer"
@@ -91,6 +93,8 @@ const AdminManagerPanel = ({ managersList, onContact, isPending }) => {
             </p>
             <div className="relative">
                 <select
+                    id="manager-select"
+                    name="managerId"
                     value={selectedId}
                     onChange={(e) => setSelectedId(e.target.value)}
                     className="w-full bg-surface-hover border border-surface-border rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-royal-500 appearance-none cursor-pointer"
@@ -158,8 +162,8 @@ const ChatPage = () => {
     const { data: convData } = useQuery({
         queryKey: ['conversations'],
         queryFn: () => chatService.getConversations().then((r) => r.data),
-        refetchInterval: 2000,
-        staleTime: 500,
+        refetchInterval: 5000,
+        staleTime: 1000,
     });
 
     // Group conversations by otherUser.id to prevent duplicates in the list
@@ -207,8 +211,8 @@ const ChatPage = () => {
             return { messages: allMsgs };
         },
         enabled: !!selectedChat,
-        refetchInterval: 1000,
-        staleTime: 200,
+        refetchInterval: 3000,
+        staleTime: 1000,
     });
     const messages = msgData?.messages || [];
 
@@ -420,6 +424,8 @@ const ChatPage = () => {
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                                 <input
+                                    id="chat-search"
+                                    name="search"
                                     type="text" value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search conversations..."
@@ -585,6 +591,8 @@ const ChatPage = () => {
                                 {/* Message input */}
                                 <form onSubmit={handleSend} className="p-4 border-t border-surface-border flex gap-2">
                                     <input
+                                        id="message-input"
+                                        name="message"
                                         value={message}
                                         onChange={(e) => setMessage(e.target.value)}
                                         placeholder={`Message ${selectedChat.otherUser?.name || 'manager'}...`}

@@ -62,6 +62,6 @@ api.interceptors.response.use(
 );
 
 // Install mock fallback — when backend fails, mock data is returned
-installMockInterceptor(api);
+// installMockInterceptor(api);
 
 export default api;

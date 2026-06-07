@@ -12,6 +12,8 @@ spring:
       max-request-size: 50MB
 
 eureka:
+  instance:
+    hostname: localhost
   client:
     service-url:
       defaultZone: http://localhost:8001/eureka/

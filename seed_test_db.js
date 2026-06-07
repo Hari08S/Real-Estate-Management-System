@@ -9,7 +9,7 @@ const properties = [
         bedrooms: 3, bathrooms: 3, area: 1850, status: "APPROVED", sellerId: "u2",
         location: { address: "Road No. 12, Banjara Hills", city: "Hyderabad", state: "Telangana", pincode: "500034" },
         images: ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800","https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"],
-        unlockFee: 499, views: 245, unlockCount: 12, createdAt: new Date("2025-12-01"),
+        unlockFee: 499, views: 245, unlockCount: 12, buyerPercent: 70, avgTimeOnPage: 145, createdAt: new Date("2025-12-01"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2025-11-28"), APPROVED: new Date("2025-12-01") },
         _class: "com.squarefeetx.property.model.Property"
@@ -21,7 +21,7 @@ const properties = [
         bedrooms: 4, bathrooms: 4, area: 3200, status: "APPROVED", sellerId: "u2",
         location: { address: "Film Nagar, Jubilee Hills", city: "Hyderabad", state: "Telangana", pincode: "500033" },
         images: ["https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800","https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800"],
-        unlockFee: 999, views: 189, unlockCount: 8, createdAt: new Date("2025-11-20"),
+        unlockFee: 999, views: 189, unlockCount: 8, buyerPercent: 65, avgTimeOnPage: 160, createdAt: new Date("2025-11-20"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2025-11-18"), APPROVED: new Date("2025-11-20") },
         _class: "com.squarefeetx.property.model.Property"
@@ -33,7 +33,7 @@ const properties = [
         bedrooms: 2, bathrooms: 2, area: 1100, status: "APPROVED", sellerId: "u2",
         location: { address: "Nanakramguda Road, Gachibowli", city: "Hyderabad", state: "Telangana", pincode: "500032" },
         images: ["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800","https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800"],
-        unlockFee: 199, views: 320, unlockCount: 22, createdAt: new Date("2026-01-05"),
+        unlockFee: 199, views: 320, unlockCount: 22, buyerPercent: 75, avgTimeOnPage: 110, createdAt: new Date("2026-01-05"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-01-03"), APPROVED: new Date("2026-01-05") },
         _class: "com.squarefeetx.property.model.Property"
@@ -45,7 +45,7 @@ const properties = [
         bedrooms: 5, bathrooms: 5, area: 4500, status: "APPROVED", sellerId: "u2",
         location: { address: "Hitec City Main Road, Madhapur", city: "Hyderabad", state: "Telangana", pincode: "500081" },
         images: ["https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800","https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800"],
-        unlockFee: 1499, views: 156, unlockCount: 5, createdAt: new Date("2026-01-10"),
+        unlockFee: 1499, views: 156, unlockCount: 5, buyerPercent: 60, avgTimeOnPage: 180, createdAt: new Date("2026-01-10"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-01-08"), APPROVED: new Date("2026-01-10") },
         _class: "com.squarefeetx.property.model.Property"
@@ -57,7 +57,7 @@ const properties = [
         bedrooms: 0, bathrooms: 4, area: 5000, status: "APPROVED", sellerId: "u2",
         location: { address: "Financial District", city: "Hyderabad", state: "Telangana", pincode: "500032" },
         images: ["https://images.unsplash.com/photo-1497366216548-37526070297c?w=800","https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800"],
-        unlockFee: 999, views: 98, unlockCount: 3, createdAt: new Date("2026-01-15"),
+        unlockFee: 999, views: 98, unlockCount: 3, buyerPercent: 50, avgTimeOnPage: 75, createdAt: new Date("2026-01-15"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-01-13"), APPROVED: new Date("2026-01-15") },
         _class: "com.squarefeetx.property.model.Property"
@@ -69,7 +69,7 @@ const properties = [
         bedrooms: 3, bathrooms: 2, area: 1600, status: "PENDING", sellerId: "u1",
         location: { address: "Botanical Garden Road, Kondapur", city: "Hyderabad", state: "Telangana", pincode: "500084" },
         images: ["https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=800"],
-        unlockFee: 399, views: 45, unlockCount: 0, createdAt: new Date("2026-02-01"),
+        unlockFee: 399, views: 45, unlockCount: 0, buyerPercent: 55, avgTimeOnPage: 85, createdAt: new Date("2026-02-01"),
         sellerContact: { name: "Hari Kumar", phone: "+91 98765 43210", email: "hari@example.com" },
         statusTimestamps: { PENDING: new Date("2026-02-01") },
         _class: "com.squarefeetx.property.model.Property"
@@ -81,7 +81,7 @@ const properties = [
         bedrooms: 4, bathrooms: 3, area: 6000, status: "APPROVED", sellerId: "u2",
         location: { address: "Shamshabad", city: "Hyderabad", state: "Telangana", pincode: "501218" },
         images: ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800","https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800"],
-        unlockFee: 799, views: 210, unlockCount: 9, createdAt: new Date("2026-01-20"),
+        unlockFee: 799, views: 210, unlockCount: 9, buyerPercent: 72, avgTimeOnPage: 210, createdAt: new Date("2026-01-20"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-01-18"), APPROVED: new Date("2026-01-20") },
         _class: "com.squarefeetx.property.model.Property"
@@ -93,7 +93,7 @@ const properties = [
         bedrooms: 1, bathrooms: 1, area: 650, status: "APPROVED", sellerId: "u2",
         location: { address: "Kukatpally Housing Board", city: "Hyderabad", state: "Telangana", pincode: "500072" },
         images: ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800","https://images.unsplash.com/photo-1560184897-ae75f418493e?w=800"],
-        unlockFee: 99, views: 410, unlockCount: 30, createdAt: new Date("2026-02-10"),
+        unlockFee: 99, views: 410, unlockCount: 30, buyerPercent: 78, avgTimeOnPage: 115, createdAt: new Date("2026-02-10"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-02-08"), APPROVED: new Date("2026-02-10") },
         _class: "com.squarefeetx.property.model.Property"
@@ -105,7 +105,7 @@ const properties = [
         bedrooms: 4, bathrooms: 4, area: 2800, status: "APPROVED", sellerId: "u2",
         location: { address: "Kokapet Main Road", city: "Hyderabad", state: "Telangana", pincode: "500075" },
         images: ["https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800","https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800"],
-        unlockFee: 799, views: 175, unlockCount: 7, createdAt: new Date("2026-02-15"),
+        unlockFee: 799, views: 175, unlockCount: 7, buyerPercent: 63, avgTimeOnPage: 150, createdAt: new Date("2026-02-15"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-02-13"), APPROVED: new Date("2026-02-15") },
         _class: "com.squarefeetx.property.model.Property"
@@ -117,7 +117,7 @@ const properties = [
         bedrooms: 2, bathrooms: 2, area: 1250, status: "APPROVED", sellerId: "u1",
         location: { address: "Beach Road, RK Beach", city: "Visakhapatnam", state: "Andhra Pradesh", pincode: "530002" },
         images: ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800","https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800"],
-        unlockFee: 399, views: 312, unlockCount: 15, createdAt: new Date("2026-02-20"),
+        unlockFee: 399, views: 312, unlockCount: 15, buyerPercent: 67, avgTimeOnPage: 130, createdAt: new Date("2026-02-20"),
         sellerContact: { name: "Hari Kumar", phone: "+91 98765 43210", email: "hari@example.com" },
         statusTimestamps: { PENDING: new Date("2026-02-18"), APPROVED: new Date("2026-02-20") },
         _class: "com.squarefeetx.property.model.Property"
@@ -129,7 +129,7 @@ const properties = [
         bedrooms: 1, bathrooms: 1, area: 550, status: "APPROVED", sellerId: "u2",
         location: { address: "12th Main, Indiranagar", city: "Bangalore", state: "Karnataka", pincode: "560038" },
         images: ["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800","https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800"],
-        unlockFee: 149, views: 520, unlockCount: 35, createdAt: new Date("2026-03-01"),
+        unlockFee: 149, views: 520, unlockCount: 35, buyerPercent: 80, avgTimeOnPage: 125, createdAt: new Date("2026-03-01"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-02-27"), APPROVED: new Date("2026-03-01") },
         _class: "com.squarefeetx.property.model.Property"
@@ -141,7 +141,7 @@ const properties = [
         bedrooms: 3, bathrooms: 3, area: 2200, status: "APPROVED", sellerId: "u1",
         location: { address: "West Marredpally", city: "Secunderabad", state: "Telangana", pincode: "500026" },
         images: ["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800","https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800"],
-        unlockFee: 599, views: 140, unlockCount: 6, createdAt: new Date("2026-03-05"),
+        unlockFee: 599, views: 140, unlockCount: 6, buyerPercent: 58, avgTimeOnPage: 140, createdAt: new Date("2026-03-05"),
         sellerContact: { name: "Hari Kumar", phone: "+91 98765 43210", email: "hari@example.com" },
         statusTimestamps: { PENDING: new Date("2026-03-03"), APPROVED: new Date("2026-03-05") },
         _class: "com.squarefeetx.property.model.Property"
@@ -153,7 +153,7 @@ const properties = [
         bedrooms: 0, bathrooms: 0, area: 2400, status: "APPROVED", sellerId: "u2",
         location: { address: "Shamirpet Road", city: "Hyderabad", state: "Telangana", pincode: "500078" },
         images: ["https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800","https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800"],
-        unlockFee: 299, views: 88, unlockCount: 4, createdAt: new Date("2026-03-10"),
+        unlockFee: 299, views: 88, unlockCount: 4, buyerPercent: 48, avgTimeOnPage: 90, createdAt: new Date("2026-03-10"),
         sellerContact: { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com" },
         statusTimestamps: { PENDING: new Date("2026-03-08"), APPROVED: new Date("2026-03-10") },
         _class: "com.squarefeetx.property.model.Property"

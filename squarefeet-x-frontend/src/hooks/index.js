@@ -20,12 +20,20 @@ export const useInitAuth = () => {
         initialized.current = true;
 
         const init = async () => {
+            const loggedIn = localStorage.getItem('sqfx-logged-in') === 'true';
+            if (!loggedIn) {
+                setUser(null);
+                setInitialized(true);
+                return;
+            }
+
             try {
                 const { data } = await authService.getMe();
                 setUser(data.user);
                 if (data.user?.id) useSavedStore.getState().initForUser(data.user.id);
             } catch {
                 setUser(null);
+                localStorage.removeItem('sqfx-logged-in');
             } finally {
                 setInitialized(true);
             }
@@ -50,6 +58,7 @@ export const useLogin = () => {
     const login = async (credentials) => {
         const { data } = await authService.login(credentials);
         setUser(data.user);
+        localStorage.setItem('sqfx-logged-in', 'true');
         if (data.user?.id) useSavedStore.getState().initForUser(data.user.id);
         const params = new URLSearchParams(location.search);
         const returnUrl = params.get('returnUrl');
@@ -68,6 +77,7 @@ export const useLogout = () => {
             await authService.logout();
         } catch { /* proceed anyway */ }
         clearAuth();
+        localStorage.removeItem('sqfx-logged-in');
         navigate('/login');
     };
 

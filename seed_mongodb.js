@@ -53,6 +53,8 @@ async function seed() {
                 images: ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800"],
                 views: 142,
                 unlockCount: 8,
+                buyerPercent: 68,
+                avgTimeOnPage: 125,
                 unlockFee: 499.0,
                 rejectionReason: null,
                 statusTimestamps: {
@@ -99,6 +101,8 @@ async function seed() {
                 images: ["https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800"],
                 views: 256,
                 unlockCount: 15,
+                buyerPercent: 74,
+                avgTimeOnPage: 195,
                 unlockFee: 999.0,
                 rejectionReason: null,
                 statusTimestamps: {
@@ -145,6 +149,8 @@ async function seed() {
                 images: ["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800"],
                 views: 89,
                 unlockCount: 4,
+                buyerPercent: 58,
+                avgTimeOnPage: 92,
                 unlockFee: 299.0,
                 rejectionReason: null,
                 statusTimestamps: {
@@ -191,6 +197,8 @@ async function seed() {
                 images: ["https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"],
                 views: 34,
                 unlockCount: 0,
+                buyerPercent: 45,
+                avgTimeOnPage: 60,
                 unlockFee: 1499.0,
                 rejectionReason: null,
                 statusTimestamps: {
@@ -236,6 +244,8 @@ async function seed() {
                 images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"],
                 views: 312,
                 unlockCount: 22,
+                buyerPercent: 82,
+                avgTimeOnPage: 245,
                 unlockFee: 799.0,
                 rejectionReason: null,
                 statusTimestamps: {
@@ -248,6 +258,100 @@ async function seed() {
                     email: "priya@example.com"
                 },
                 createdAt: new Date("2026-04-05T07:00:00")
+            },
+            {
+                title: "Budget 1BHK near HITEC City",
+                description: "Compact 1BHK ideal for working professionals. Close to HITEC City IT hub with excellent public transport connectivity. Includes covered car parking.",
+                propertyType: "apartment",
+                listingType: "RENT",
+                monthlyRent: 14000,
+                securityDeposit: 50000,
+                leaseAmount: null,
+                leaseDurationYears: null,
+                refundableDeposit: null,
+                leaseConditions: null,
+                leaseDurationMonths: null,
+                availableFrom: "2026-02-10",
+                petFriendly: true,
+                maintenanceIncluded: true,
+                bedrooms: 1,
+                bathrooms: 1,
+                area: 650,
+                status: "APPROVED",
+                sellerId: "seller-002",
+                managerId: "manager-001",
+                location: {
+                    address: "Kukatpally Housing Board",
+                    city: "Hyderabad",
+                    state: "Telangana",
+                    pincode: "500072",
+                    lat: 17.4850,
+                    lng: 78.4100
+                },
+                images: ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800","https://images.unsplash.com/photo-1560184897-ae75f418493e?w=800"],
+                views: 410,
+                unlockCount: 30,
+                buyerPercent: 78,
+                avgTimeOnPage: 115,
+                unlockFee: 99.0,
+                rejectionReason: null,
+                statusTimestamps: {
+                    "PENDING": new Date("2026-02-08T10:00:00"),
+                    "APPROVED": new Date("2026-02-10T14:30:00")
+                },
+                sellerContact: {
+                    name: "Amit Kumar",
+                    phone: "+91 98765 43210",
+                    email: "amit@example.com"
+                },
+                createdAt: new Date("2026-02-10T10:00:00")
+            },
+            {
+                title: "Studio Apartment in Indiranagar, Bangalore",
+                description: "Trendy studio apartment in the heart of Indiranagar. Walking distance to 100 Feet Road restaurants and pubs. Fully furnished with smart TV and high-speed WiFi.",
+                propertyType: "apartment",
+                listingType: "RENT",
+                monthlyRent: 22000,
+                securityDeposit: 80000,
+                leaseAmount: null,
+                leaseDurationYears: null,
+                refundableDeposit: null,
+                leaseConditions: null,
+                leaseDurationMonths: null,
+                availableFrom: "2026-03-01",
+                petFriendly: true,
+                maintenanceIncluded: true,
+                bedrooms: 1,
+                bathrooms: 1,
+                area: 550,
+                status: "APPROVED",
+                sellerId: "seller-002",
+                managerId: "manager-001",
+                location: {
+                    address: "12th Main, Indiranagar",
+                    city: "Bangalore",
+                    state: "Karnataka",
+                    pincode: "560038",
+                    lat: 12.9784,
+                    lng: 77.6408
+                },
+                images: ["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800","https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800"],
+                views: 520,
+                unlockCount: 35,
+                buyerPercent: 80,
+                avgTimeOnPage: 125,
+                unlockFee: 149.0,
+                rejectionReason: null,
+                statusTimestamps: {
+                    "PENDING": new Date("2026-02-27T10:00:00"),
+                    "APPROVED": new Date("2026-03-01T14:30:00")
+                },
+                sellerContact: {
+                    name: "Amit Kumar",
+                    phone: "+91 98765 43210",
+                    email: "amit@example.com"
+                },
+                createdAt: new Date("2026-03-01T10:00:00")
             }
         ];
 

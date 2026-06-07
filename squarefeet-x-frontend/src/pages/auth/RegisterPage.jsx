@@ -97,19 +97,19 @@ const RegisterPage = () => {
 
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Input label="Full Name" placeholder="John Doe" icon={User} error={errors.name?.message} {...register('name')} />
-                                <Input label="Phone" type="tel" placeholder="+91 98765 43210" icon={Phone} error={errors.phone?.message} {...register('phone')} />
+                                <Input label="Full Name" placeholder="John Doe" icon={User} error={errors.name?.message} autoComplete="name" {...register('name')} />
+                                <Input label="Phone" type="tel" placeholder="+91 98765 43210" icon={Phone} error={errors.phone?.message} autoComplete="tel" {...register('phone')} />
                             </div>
-                            <Input label="Email" type="email" placeholder="you@example.com" icon={Mail} error={errors.email?.message} {...register('email')} />
+                            <Input label="Email" type="email" placeholder="you@example.com" icon={Mail} error={errors.email?.message} autoComplete="email" {...register('email')} />
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="relative">
-                                    <Input label="Password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" icon={Lock} error={errors.password?.message} {...register('password')} />
+                                    <Input label="Password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" icon={Lock} error={errors.password?.message} autoComplete="new-password" {...register('password')} />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[38px] text-text-muted hover:text-text-secondary transition-colors">
                                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
                                 </div>
-                                <Input label="Confirm Password" type="password" placeholder="••••••••" icon={Lock} error={errors.confirmPassword?.message} {...register('confirmPassword')} />
+                                <Input label="Confirm Password" type="password" placeholder="••••••••" icon={Lock} error={errors.confirmPassword?.message} autoComplete="new-password" {...register('confirmPassword')} />
                             </div>
 
                             <Button type="submit" className="w-full" size="lg" isLoading={isLoading} iconRight={ArrowRight}>

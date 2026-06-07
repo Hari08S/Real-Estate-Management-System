@@ -42,6 +42,7 @@ export const propertyService = {
         return api.get(`/properties/my-listings?${query}`);
     },
     getSavedProperties: () => api.get('/properties/saved'),
+    toggleSave: (id) => api.post(`/properties/saved/toggle/${id}`),
     incrementUnlockCount: (id) => api.post(`/properties/${id}/unlock`),
     uploadImages: (id, formData) => api.post(`/properties/${id}/images`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

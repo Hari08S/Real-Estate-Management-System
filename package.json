@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "check": "node check_db.js",
+    "check-users": "node check_users_rms.js"
+  },
   "devDependencies": {
     "mongodb": "^7.2.0"
   }

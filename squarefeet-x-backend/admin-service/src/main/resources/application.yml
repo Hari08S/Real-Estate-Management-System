@@ -8,6 +8,8 @@ spring:
     uri: mongodb://localhost:27017/RMS
 
 eureka:
+  instance:
+    hostname: localhost
   client:
     service-url:
       defaultZone: http://localhost:8001/eureka/

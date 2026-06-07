@@ -1,7 +1,9 @@
 package com.squarefeetx.property.service;
 
 import com.squarefeetx.property.model.Property;
+import com.squarefeetx.property.model.SavedProperty;
 import com.squarefeetx.property.repository.PropertyRepository;
+import com.squarefeetx.property.repository.SavedPropertyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 public class PropertyService {
 
     private final PropertyRepository propertyRepository;
+    private final SavedPropertyRepository savedPropertyRepository;
 
     public Map<String, Object> getAllApproved(Map<String, String> params) {
         List<Property> properties = propertyRepository.findByStatus("APPROVED");
@@ -138,13 +141,6 @@ public class PropertyService {
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property not found"));
         property.setViews((property.getViews() != null ? property.getViews() : 0) + 1);
-        Random r = new Random();
-        if (property.getBuyerPercent() == null) {
-            property.setBuyerPercent(50 + r.nextInt(31));
-        }
-        if (property.getAvgTimeOnPage() == null) {
-            property.setAvgTimeOnPage(45 + r.nextInt(136));
-        }
         return propertyRepository.save(property);
     }
 
@@ -160,9 +156,8 @@ public class PropertyService {
         property.setSellerId(sellerId);
         property.setViews(0);
         property.setUnlockCount(0);
-        Random r = new Random();
-        property.setBuyerPercent(50 + r.nextInt(31));
-        property.setAvgTimeOnPage(45 + r.nextInt(136));
+        property.setBuyerPercent(0);
+        property.setAvgTimeOnPage(0);
         property.setCreatedAt(LocalDateTime.now());
         property.setStatusTimestamps(Map.of(
                 "DRAFT", LocalDateTime.now(),
@@ -205,6 +200,17 @@ public class PropertyService {
         if (updates.getReraStatus() != null) existing.setReraStatus(updates.getReraStatus());
         if (updates.getFloor() != null) existing.setFloor(updates.getFloor());
         if (updates.getLocation() != null) existing.setLocation(updates.getLocation());
+        if (updates.getLeaseDurationYears() != null) existing.setLeaseDurationYears(updates.getLeaseDurationYears());
+        if (updates.getRefundableDeposit() != null) existing.setRefundableDeposit(updates.getRefundableDeposit());
+        if (updates.getLeaseConditions() != null) existing.setLeaseConditions(updates.getLeaseConditions());
+        if (updates.getLeaseDurationMonths() != null) existing.setLeaseDurationMonths(updates.getLeaseDurationMonths());
+        if (updates.getAvailableFrom() != null) existing.setAvailableFrom(updates.getAvailableFrom());
+        if (updates.getPetFriendly() != null) existing.setPetFriendly(updates.getPetFriendly());
+        if (updates.getMaintenanceIncluded() != null) existing.setMaintenanceIncluded(updates.getMaintenanceIncluded());
+        if (updates.getViews() != null) existing.setViews(updates.getViews());
+        if (updates.getUnlockCount() != null) existing.setUnlockCount(updates.getUnlockCount());
+        if (updates.getBuyerPercent() != null) existing.setBuyerPercent(updates.getBuyerPercent());
+        if (updates.getAvgTimeOnPage() != null) existing.setAvgTimeOnPage(updates.getAvgTimeOnPage());
         if (updates.getImages() != null && !updates.getImages().isEmpty()) {
             existing.setImages(updates.getImages());
         }
@@ -244,21 +250,6 @@ public class PropertyService {
 
     public Map<String, Object> getMyListings(String sellerId) {
         List<Property> properties = propertyRepository.findBySellerId(sellerId);
-        Random r = new Random();
-        for (Property p : properties) {
-            boolean changed = false;
-            if (p.getBuyerPercent() == null) {
-                p.setBuyerPercent(50 + r.nextInt(31));
-                changed = true;
-            }
-            if (p.getAvgTimeOnPage() == null) {
-                p.setAvgTimeOnPage(45 + r.nextInt(136));
-                changed = true;
-            }
-            if (changed) {
-                propertyRepository.save(p);
-            }
-        }
         Map<String, Object> stats = Map.of(
                 "totalListings", properties.size(),
                 "activeListings", properties.stream().filter(p -> "APPROVED".equals(p.getStatus())).count(),
@@ -300,5 +291,33 @@ public class PropertyService {
 
     public long getPropertyCount() {
         return propertyRepository.count();
+    }
+
+    public List<Property> getSavedProperties(String userId) {
+        List<SavedProperty> saved = savedPropertyRepository.findByUserId(userId);
+        List<String> propertyIds = saved.stream().map(SavedProperty::getPropertyId).toList();
+        Iterable<Property> iterable = propertyRepository.findAllById(propertyIds);
+        List<Property> list = new ArrayList<>();
+        iterable.forEach(list::add);
+        return list;
+    }
+
+    public boolean toggleSaveProperty(String userId, String propertyId) {
+        Optional<SavedProperty> existing = savedPropertyRepository.findByUserIdAndPropertyId(userId, propertyId);
+        if (existing.isPresent()) {
+            savedPropertyRepository.delete(existing.get());
+            return false;
+        } else {
+            savedPropertyRepository.save(SavedProperty.builder()
+                    .userId(userId)
+                    .propertyId(propertyId)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            return true;
+        }
+    }
+
+    public long getSavedPropertiesCount(String userId) {
+        return savedPropertyRepository.countByUserId(userId);
     }
 }

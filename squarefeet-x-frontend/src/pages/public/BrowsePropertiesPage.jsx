@@ -30,7 +30,7 @@ const BrowsePropertiesPage = () => {
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [localSearch, setLocalSearch] = useState('');
     const { filters, setFilter, resetFilters } = useFilterStore();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
         const type = searchParams.get('type') || searchParams.get('listingType') || '';
@@ -39,6 +39,24 @@ const BrowsePropertiesPage = () => {
             setPage(1);
         }
     }, [searchParams, setFilter, filters.listingType]);
+
+    const updateListingTypeParam = (newType) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (newType) {
+                next.set('type', newType);
+            } else {
+                next.delete('type');
+                next.delete('listingType');
+            }
+            return next;
+        });
+    };
+
+    const handleResetFilters = () => {
+        resetFilters();
+        setSearchParams({});
+    };
 
     const { addItem } = useCompareStore();
     const { addSearch, removeSearch, history } = useSearchHistoryStore();
@@ -144,7 +162,7 @@ const BrowsePropertiesPage = () => {
                         {(!user || (user.activeRole !== ROLES.BUYER && user.activeRole !== ROLES.RENTAL_SEEKER)) && (
                             <div className="flex gap-4 border-b border-surface-border mb-6">
                                 <button
-                                    onClick={() => { setFilter('listingType', ''); setPage(1); }}
+                                    onClick={() => updateListingTypeParam('')}
                                     className={`pb-3 text-sm font-medium transition-all border-b-2 px-1 ${
                                         !filters.listingType
                                             ? 'border-royal-500 text-royal-400 font-semibold'
@@ -154,7 +172,7 @@ const BrowsePropertiesPage = () => {
                                     All Properties
                                 </button>
                                 <button
-                                    onClick={() => { setFilter('listingType', 'SALE'); setPage(1); }}
+                                    onClick={() => updateListingTypeParam('SALE')}
                                     className={`pb-3 text-sm font-medium transition-all border-b-2 px-1 ${
                                         filters.listingType === 'SALE'
                                             ? 'border-royal-500 text-royal-400 font-semibold'
@@ -164,7 +182,7 @@ const BrowsePropertiesPage = () => {
                                     Buy (For Sale)
                                 </button>
                                 <button
-                                    onClick={() => { setFilter('listingType', 'RENT'); setPage(1); }}
+                                    onClick={() => updateListingTypeParam('RENT')}
                                     className={`pb-3 text-sm font-medium transition-all border-b-2 px-1 ${
                                         filters.listingType === 'RENT'
                                             ? 'border-royal-500 text-royal-400 font-semibold'
@@ -273,7 +291,7 @@ const BrowsePropertiesPage = () => {
                                     <div className="glass-card p-6">
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-sm font-semibold text-text-primary">Filters</h3>
-                                            <button onClick={resetFilters} className="text-xs text-royal-400 hover:text-royal-300">Reset All</button>
+                                            <button onClick={handleResetFilters} className="text-xs text-royal-400 hover:text-royal-300">Reset All</button>
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                             <Select
@@ -286,7 +304,7 @@ const BrowsePropertiesPage = () => {
                                                 placeholder="Listing Type"
                                                 options={allowedListingTypes}
                                                 value={filters.listingType}
-                                                onChange={(e) => { setFilter('listingType', e.target.value); setPage(1); }}
+                                                onChange={(e) => updateListingTypeParam(e.target.value)}
                                             />
                                             <Input
                                                 placeholder="Min Price"
@@ -382,7 +400,7 @@ const BrowsePropertiesPage = () => {
                                 </div>
                                 <h3 className="text-lg font-display font-semibold text-text-primary mb-2">No properties found</h3>
                                 <p className="text-text-secondary text-sm">Try adjusting your filters or search terms</p>
-                                <Button variant="secondary" className="mt-4" onClick={resetFilters}>Clear Filters</Button>
+                                <Button variant="secondary" className="mt-4" onClick={handleResetFilters}>Clear Filters</Button>
                             </div>
                         ) : (
                             <>

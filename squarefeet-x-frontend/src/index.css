@@ -53,7 +53,7 @@
 }
 
 /* ===== Light Mode Overrides ===== */
-.light {
+html.light {
   --color-surface-dark: #f5f8f0;
   --color-surface-card: #ffffff;
   --color-surface-hover: #EBF4DD;

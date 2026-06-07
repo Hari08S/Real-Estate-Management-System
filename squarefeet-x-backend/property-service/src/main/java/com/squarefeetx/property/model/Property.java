@@ -49,12 +49,34 @@ public class Property {
     private Integer views = 0;
     @Builder.Default
     private Integer unlockCount = 0;
-    @Builder.Default
-    private Integer buyerPercent = 65;
-    @Builder.Default
-    private Integer avgTimeOnPage = 120;
+    private Integer buyerPercent;
+    private Integer avgTimeOnPage;
     private Double unlockFee;
     private String rejectionReason;
+
+    @org.springframework.data.annotation.Transient
+    private Double buyerInterestRate;
+
+    @org.springframework.data.annotation.Transient
+    private Integer seekersPercent;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("buyerInterestRate")
+    public Double getBuyerInterestRate() {
+        if (views == null || views == 0) {
+            return 0.0;
+        }
+        double rate = ((double) (unlockCount != null ? unlockCount : 0) / views) * 100.0;
+        return Math.round(rate * 10.0) / 10.0;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("seekersPercent")
+    public Integer getSeekersPercent() {
+        if (buyerPercent == null) {
+            return 100;
+        }
+        return Math.max(0, 100 - buyerPercent);
+    }
+
     @Builder.Default
     private Map<String, LocalDateTime> statusTimestamps = new HashMap<>();
     private SellerContact sellerContact;

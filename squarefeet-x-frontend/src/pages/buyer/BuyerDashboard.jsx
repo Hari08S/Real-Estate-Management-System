@@ -68,11 +68,11 @@ const BuyerDashboard = () => {
     const inquiryCount = activeChats;
 
     const stats = {
-        totalInquiries: inquiryCount,
+        totalInquiries: apiStats?.totalInquiries ?? inquiryCount,
         totalViewed: recentlyViewed.length || (apiStats?.totalViewed ?? Math.max(savedProperties.length * 2, 0)),
-        totalSaved: savedIds.length,
-        activeChats,
-        properties: savedProperties.length ? savedProperties : (apiStats?.properties || []),
+        totalSaved: apiStats?.totalSaved ?? savedIds.length,
+        activeChats: apiStats?.activeChats ?? activeChats,
+        properties: apiStats?.properties || savedProperties,
     };
 
     if (isLoading && !allProperties) return <DashboardSkeleton />;

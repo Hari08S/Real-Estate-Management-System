@@ -38,16 +38,7 @@ const MyListingsPage = () => {
     });
 
     const rawListings = data?.properties || [];
-    const roleFiltered = rawListings.filter((l) => {
-        if (user?.activeRole === 'SELLER') {
-            return l.listingType === 'SALE';
-        } else if (user?.activeRole === 'RENTAL_OWNER') {
-            return l.listingType === 'RENT' || l.listingType === 'LEASE';
-        }
-        return true;
-    });
-
-    const listings = roleFiltered.filter((l) =>
+    const listings = rawListings.filter((l) =>
         l.title?.toLowerCase().includes(search.toLowerCase())
     );
 

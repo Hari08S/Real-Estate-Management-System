@@ -20,7 +20,8 @@ import { motion } from 'framer-motion';
 
 const guestLinks = [
     { to: '/', label: 'Home', icon: Home },
-    { to: '/properties', label: 'Browse', icon: Search },
+    { to: '/properties?type=SALE', label: 'Buy', icon: Search },
+    { to: '/properties?type=RENT', label: 'Rent', icon: Search },
     { to: '/login', label: 'Login', icon: LogIn },
     { to: '/register', label: 'Register', icon: UserPlus },
 ];
@@ -28,7 +29,7 @@ const guestLinks = [
 const roleMenus = {
     [ROLES.BUYER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse', icon: Search },
+        { to: '/properties?type=SALE', label: 'Buy', icon: Search },
         { to: '/buyer/favorites', label: 'Favorites', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Planner', icon: MapPin },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
@@ -47,20 +48,22 @@ const roleMenus = {
     ],
     [ROLES.RENTAL_SEEKER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse', icon: Search },
+        { to: '/properties?type=RENT', label: 'Rent', icon: Search },
         { to: '/buyer/favorites', label: 'Favorites', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Planner', icon: MapPin },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.MANAGER]: [
         { to: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse', icon: Search },
+        { to: '/properties?type=SALE', label: 'Buy', icon: Search },
+        { to: '/properties?type=RENT', label: 'Rent', icon: Search },
         { to: '/manager/listings', label: 'Review Listings', icon: List },
         { to: '/manager/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.ADMIN]: [
         { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse', icon: Search },
+        { to: '/properties?type=SALE', label: 'Buy', icon: Search },
+        { to: '/properties?type=RENT', label: 'Rent', icon: Search },
         { to: '/admin/favorites', label: 'Favorites', icon: Heart },
         { to: '/admin/properties', label: 'Listings', icon: Building2 },
         { to: '/admin/users', label: 'Users', icon: Users },
@@ -93,9 +96,9 @@ const Navbar = () => {
         queryKey: ['conversations'],
         queryFn: () => chatService.getConversations().then((r) => r.data),
         enabled: isAuthenticated,
-        refetchInterval: 3000,
+        refetchInterval: notificationOpen ? 10000 : false,
         refetchOnWindowFocus: true,
-        staleTime: 0,
+        staleTime: 5000,
     });
     const conversations = convData?.conversations || [];
 
@@ -104,9 +107,9 @@ const Navbar = () => {
         queryKey: ['unread-count'],
         queryFn: () => chatService.getUnreadCount().then((r) => r.data),
         enabled: isAuthenticated,
-        refetchInterval: 3000,
+        refetchInterval: 5000,
         refetchOnWindowFocus: true,
-        staleTime: 0,
+        staleTime: 5000,
     });
 
     const getChatLink = (role) => {
@@ -206,7 +209,12 @@ const Navbar = () => {
                     {/* Desktop Links */}
                     <div className="hidden md:flex items-center gap-1">
                         {links.map((link) => {
-                            const isActive = location.pathname === link.to;
+                            const pathWithoutQuery = link.to.split('?')[0];
+                            const queryPart = link.to.split('?')[1];
+                            let isActive = location.pathname === pathWithoutQuery;
+                            if (isActive && queryPart) {
+                                isActive = location.search.includes(queryPart);
+                            }
                             return (
                                 <Link
                                     key={link.to}
@@ -456,7 +464,12 @@ const Navbar = () => {
                         >
                             <div className="py-3 space-y-1">
                                 {links.map((link) => {
-                                    const isActive = location.pathname === link.to;
+                                    const pathWithoutQuery = link.to.split('?')[0];
+                                    const queryPart = link.to.split('?')[1];
+                                    let isActive = location.pathname === pathWithoutQuery;
+                                    if (isActive && queryPart) {
+                                        isActive = location.search.includes(queryPart);
+                                    }
                                     return (
                                         <Link
                                             key={link.to}

@@ -17,7 +17,7 @@ import { chatService } from '../../services/api';
 const sidebarMenus = {
     [ROLES.BUYER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse Properties', icon: Search },
+        { to: '/properties?type=SALE', label: 'Buy Properties', icon: Search },
         { to: '/buyer/favorites', label: 'Favourite Properties', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Map', icon: Navigation },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
@@ -36,14 +36,15 @@ const sidebarMenus = {
     ],
     [ROLES.RENTAL_SEEKER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse Properties', icon: Search },
+        { to: '/properties?type=RENT', label: 'Rent Properties', icon: Search },
         { to: '/buyer/favorites', label: 'Favourite Properties', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Map', icon: Navigation },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.MANAGER]: [
         { to: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse Properties', icon: Search },
+        { to: '/properties?type=SALE', label: 'Buy Properties', icon: Search },
+        { to: '/properties?type=RENT', label: 'Rent Properties', icon: Search },
         { to: '/manager/listings?type=seller', label: 'Seller Properties', icon: List },
         { to: '/manager/listings?type=rent', label: 'Rent Properties', icon: List },
         { to: '/manager/unassigned', label: 'Unassigned Pool', icon: Building2 },
@@ -51,7 +52,8 @@ const sidebarMenus = {
     ],
     [ROLES.ADMIN]: [
         { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties', label: 'Browse Properties', icon: Search },
+        { to: '/properties?type=SALE', label: 'Buy Properties', icon: Search },
+        { to: '/properties?type=RENT', label: 'Rent Properties', icon: Search },
         { to: '/admin/favorites', label: 'Favourite Properties', icon: Heart },
         { to: '/admin/properties?type=sale', label: 'Seller Properties', icon: Building2 },
         { to: '/admin/properties?type=rent', label: 'Rent Properties', icon: Building2 },
@@ -70,37 +72,17 @@ const DashboardLayout = () => {
         window.scrollTo(0, 0);
     }, [location.pathname]);
     
-    // Subscribe to the same ['conversations'] cache used by ChatPage & Navbar
-    const { data: convData } = useQuery({
-        queryKey: ['conversations'],
-        queryFn: () => chatService.getConversations().then((r) => r.data),
+    // Subscribe to the shared ['unread-count'] cache used by Navbar
+    const { data: unreadData } = useQuery({
+        queryKey: ['unread-count'],
+        queryFn: () => chatService.getUnreadCount().then((r) => r.data),
         enabled: isAuthenticated,
-        refetchInterval: 3000,
+        refetchInterval: 5000,
         refetchOnWindowFocus: true,
-        staleTime: 0,
+        staleTime: 5000,
     });
     const isChatPage = location.pathname.includes('/chat');
-    const rawConversations = convData?.conversations || [];
-    const groupedConvsMap = new Map();
-    for (const conv of rawConversations) {
-        const otherId = conv.otherUserId || conv.otherUser?.id;
-        if (!otherId) continue;
-        if (!groupedConvsMap.has(otherId)) {
-            groupedConvsMap.set(otherId, {
-                ...conv,
-                ids: [conv.id],
-                unreadCount: conv.unreadCount || 0
-            });
-        } else {
-            const existing = groupedConvsMap.get(otherId);
-            if (!existing.ids.includes(conv.id)) {
-                existing.ids.push(conv.id);
-            }
-            existing.unreadCount += (conv.unreadCount || 0);
-        }
-    }
-    const conversations = Array.from(groupedConvsMap.values());
-    const chatUnreadCount = isChatPage ? 0 : conversations.reduce((s, c) => s + (c.unreadCount || 0), 0);
+    const chatUnreadCount = isChatPage ? 0 : (unreadData?.count || 0);
 
     const compareItems = useCompareStore((s) => s.items);
     const clearCompare = useCompareStore((s) => s.clearAll);

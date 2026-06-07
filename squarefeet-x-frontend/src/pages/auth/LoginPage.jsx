@@ -83,6 +83,7 @@ const LoginPage = () => {
                                 placeholder="you@example.com"
                                 icon={Mail}
                                 error={errors.email?.message}
+                                autoComplete="email"
                                 {...register('email')}
                             />
 
@@ -93,6 +94,7 @@ const LoginPage = () => {
                                     placeholder="••••••••"
                                     icon={Lock}
                                     error={errors.password?.message}
+                                    autoComplete="current-password"
                                     {...register('password')}
                                 />
                                 <button

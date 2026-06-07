@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { classNames } from '../../utils';
 
 const Input = forwardRef(({
@@ -7,12 +7,16 @@ const Input = forwardRef(({
     icon: Icon,
     className = '',
     type = 'text',
+    id,
     ...props
 }, ref) => {
+    const generatedId = useId();
+    const inputId = id || generatedId;
+
     return (
         <div className="space-y-1.5">
             {label && (
-                <label className="block text-sm font-medium text-text-secondary">
+                <label htmlFor={inputId} className="block text-sm font-medium text-text-secondary">
                     {label}
                 </label>
             )}
@@ -24,6 +28,7 @@ const Input = forwardRef(({
                 )}
                 <input
                     ref={ref}
+                    id={inputId}
                     type={type}
                     className={classNames(
                         'w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary',
