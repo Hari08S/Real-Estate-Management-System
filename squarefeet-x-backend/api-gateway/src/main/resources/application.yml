@@ -70,6 +70,9 @@ app:
     - /api/auth/refresh-token
     - /api/auth/forgot-password
     - /api/auth/reset-password/**
+    - /api/auth/verify-email
+    - /api/auth/resend-verification-otp
     - /api/auth/google
     - /api/properties
     - /api/properties/**
+    - /api/chat/public/contact

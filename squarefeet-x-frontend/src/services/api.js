@@ -13,6 +13,8 @@ export const authService = {
     refreshToken: () => api.post('/auth/refresh-token'),
     forgotPassword: (data) => api.post('/auth/forgot-password', data),
     resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
+    verifyEmail: (data) => api.post('/auth/verify-email', data),
+    resendVerificationOtp: (data) => api.post('/auth/resend-verification-otp', data),
 };
 
 // ── User Service ──
@@ -42,6 +44,7 @@ export const propertyService = {
         return api.get(`/properties/my-listings?${query}`);
     },
     getSavedProperties: () => api.get('/properties/saved'),
+    getBuyerDashboard: () => api.get('/properties/buyer-dashboard'),
     toggleSave: (id) => api.post(`/properties/saved/toggle/${id}`),
     incrementUnlockCount: (id) => api.post(`/properties/${id}/unlock`),
     uploadImages: (id, formData) => api.post(`/properties/${id}/images`, formData, {
@@ -57,6 +60,7 @@ export const chatService = {
     sendMessage: (conversationId, data) => api.post(`/chat/conversations/${conversationId}/messages`, data),
     startConversation: (data) => api.post('/chat/conversations', data),
     contactAdmin: () => api.post('/chat/contact-admin'),
+    publicContact: (data) => api.post('/chat/public/contact', data),
     markRead: (conversationId) => api.put(`/chat/conversations/${conversationId}/read`),
     getUnreadCount: () => api.get('/chat/unread-count'),
 };

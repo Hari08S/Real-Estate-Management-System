@@ -48,6 +48,16 @@ public class User {
     @Column(name = "RESET_TOKEN_EXPIRY")
     private LocalDateTime resetTokenExpiry;
 
+    @Builder.Default
+    @Column(name = "EMAIL_VERIFIED")
+    private Boolean emailVerified = false;
+
+    @Column(name = "EMAIL_VERIFICATION_OTP", length = 10)
+    private String emailVerificationOtp;
+
+    @Column(name = "EMAIL_VERIFICATION_OTP_EXPIRY")
+    private LocalDateTime emailVerificationOtpExpiry;
+
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
 

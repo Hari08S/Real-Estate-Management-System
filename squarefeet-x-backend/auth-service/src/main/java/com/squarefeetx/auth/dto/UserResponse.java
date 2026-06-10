@@ -22,4 +22,5 @@ public class UserResponse {
     private List<String> cities;
     private LocalDateTime createdAt;
     private String rawPassword;
+    private Boolean emailVerified;
 }

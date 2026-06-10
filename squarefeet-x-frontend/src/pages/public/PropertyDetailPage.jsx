@@ -763,14 +763,49 @@ const PropertyDetailPage = () => {
                                 {/* Unlock / Contact Card */}
                                 <Card glow={inquiryStatus === 'SUCCESS'}>
                                     {inquiryStatus === 'SUCCESS' || property.isUnlocked ? (
-                                        <div className="text-center py-6">
-                                            <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                                                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                                        <div className="space-y-4 py-2">
+                                            <div className="text-center pb-4 border-b border-surface-border">
+                                                <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
+                                                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                                                </div>
+                                                <h3 className="text-base font-display font-semibold text-text-primary mb-1">Contact Revealed!</h3>
+                                                <p className="text-xs text-text-muted">
+                                                    You have unlocked direct contact details for this listing.
+                                                </p>
                                             </div>
-                                            <h3 className="text-lg font-display font-semibold text-text-primary mb-2">Request Processed!</h3>
-                                            <p className="text-sm text-text-secondary">
-                                                The details have been sent. They will contact you shortly. You can also message them directly via the chat.
-                                            </p>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-hover border border-surface-border">
+                                                    <div className="w-8 h-8 rounded-lg bg-royal-500/10 flex items-center justify-center text-royal-400">
+                                                        <User className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Seller Name</span>
+                                                        <p className="text-sm font-semibold text-text-primary">{property.sellerContact?.name || 'Verified Seller'}</p>
+                                                    </div>
+                                                </div>
+                                                {property.sellerContact?.phone && (
+                                                    <a href={`tel:${property.sellerContact.phone}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-hover border border-surface-border hover:border-royal-500/50 hover:bg-royal-500/5 transition-all">
+                                                        <div className="w-8 h-8 rounded-lg bg-royal-500/10 flex items-center justify-center text-royal-400">
+                                                            <Phone className="w-4 h-4" />
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Phone Number</span>
+                                                            <p className="text-sm font-semibold text-text-primary">{property.sellerContact.phone}</p>
+                                                        </div>
+                                                    </a>
+                                                )}
+                                                {property.sellerContact?.email && (
+                                                    <a href={`mailto:${property.sellerContact.email}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-hover border border-surface-border hover:border-royal-500/50 hover:bg-royal-500/5 transition-all">
+                                                        <div className="w-8 h-8 rounded-lg bg-royal-500/10 flex items-center justify-center text-royal-400">
+                                                            <Mail className="w-4 h-4" />
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Email Address</span>
+                                                            <p className="text-sm font-semibold text-text-primary break-all">{property.sellerContact.email}</p>
+                                                        </div>
+                                                    </a>
+                                                )}
+                                            </div>
                                         </div>
                                     ) : (
                                         <div>

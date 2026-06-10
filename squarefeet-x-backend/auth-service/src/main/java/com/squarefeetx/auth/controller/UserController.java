@@ -79,6 +79,13 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    @PostMapping("/internal/get-or-create-guest")
+    public ResponseEntity<UserResponse> getOrCreateGuest(@RequestBody Map<String, String> body) {
+        String name = body.get("name");
+        String email = body.get("email");
+        return ResponseEntity.ok(userService.getOrCreateGuest(name, email));
+    }
+
     @GetMapping("/internal/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.getProfile(id));

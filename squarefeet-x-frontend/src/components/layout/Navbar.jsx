@@ -20,8 +20,7 @@ import { motion } from 'framer-motion';
 
 const guestLinks = [
     { to: '/', label: 'Home', icon: Home },
-    { to: '/properties?type=SALE', label: 'Buy', icon: Search },
-    { to: '/properties?type=RENT', label: 'Rent', icon: Search },
+    { to: '/properties', label: 'Browse', icon: Search },
     { to: '/login', label: 'Login', icon: LogIn },
     { to: '/register', label: 'Register', icon: UserPlus },
 ];
@@ -29,7 +28,7 @@ const guestLinks = [
 const roleMenus = {
     [ROLES.BUYER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=SALE', label: 'Buy', icon: Search },
+        { to: '/properties', label: 'Browse', icon: Search },
         { to: '/buyer/favorites', label: 'Favorites', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Planner', icon: MapPin },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
@@ -48,22 +47,20 @@ const roleMenus = {
     ],
     [ROLES.RENTAL_SEEKER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=RENT', label: 'Rent', icon: Search },
+        { to: '/properties', label: 'Browse', icon: Search },
         { to: '/buyer/favorites', label: 'Favorites', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Planner', icon: MapPin },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.MANAGER]: [
         { to: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=SALE', label: 'Buy', icon: Search },
-        { to: '/properties?type=RENT', label: 'Rent', icon: Search },
+        { to: '/properties', label: 'Browse', icon: Search },
         { to: '/manager/listings', label: 'Review Listings', icon: List },
         { to: '/manager/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.ADMIN]: [
         { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=SALE', label: 'Buy', icon: Search },
-        { to: '/properties?type=RENT', label: 'Rent', icon: Search },
+        { to: '/properties', label: 'Browse', icon: Search },
         { to: '/admin/favorites', label: 'Favorites', icon: Heart },
         { to: '/admin/properties', label: 'Listings', icon: Building2 },
         { to: '/admin/users', label: 'Users', icon: Users },
@@ -82,7 +79,7 @@ const Navbar = () => {
     const queryClient = useQueryClient();
     const [profileOpen, setProfileOpen] = useState(false);
     const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, isInitialized } = useAuth();
     const logout = useLogout();
     const navigate = useNavigate();
     const location = useLocation();
@@ -95,7 +92,7 @@ const Navbar = () => {
     const { data: convData } = useQuery({
         queryKey: ['conversations'],
         queryFn: () => chatService.getConversations().then((r) => r.data),
-        enabled: isAuthenticated,
+        enabled: isAuthenticated && isInitialized,
         refetchInterval: notificationOpen ? 10000 : false,
         refetchOnWindowFocus: true,
         staleTime: 5000,
@@ -106,7 +103,7 @@ const Navbar = () => {
     const { data: unreadData } = useQuery({
         queryKey: ['unread-count'],
         queryFn: () => chatService.getUnreadCount().then((r) => r.data),
-        enabled: isAuthenticated,
+        enabled: isAuthenticated && isInitialized,
         refetchInterval: 5000,
         refetchOnWindowFocus: true,
         staleTime: 5000,

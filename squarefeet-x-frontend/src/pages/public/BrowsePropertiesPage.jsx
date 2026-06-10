@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Search, SlidersHorizontal, X, MapPin, Grid3X3, LayoutList, Clock, Bell, Trash2 } from 'lucide-react';
 import { useFilterStore } from '../../store/filterStore';
@@ -31,6 +31,7 @@ const BrowsePropertiesPage = () => {
     const [localSearch, setLocalSearch] = useState('');
     const { filters, setFilter, resetFilters } = useFilterStore();
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const type = searchParams.get('type') || searchParams.get('listingType') || '';
@@ -63,15 +64,8 @@ const BrowsePropertiesPage = () => {
     const { preferences } = useAlertPreferencesStore();
     const { user } = useAuth();
 
-    let roleListingFilter = null;
-    if (user?.activeRole === ROLES.BUYER) {
-        roleListingFilter = 'SALE';
-    } else if (user?.activeRole === ROLES.RENTAL_SEEKER) {
-        roleListingFilter = 'RENT,LEASE';
-    }
-
     const { data, isLoading, isFetching } = useQuery({
-        queryKey: ['properties', filters, page, roleListingFilter],
+        queryKey: ['properties', filters, page, user?.activeRole],
         queryFn: () => {
             const queryParams = { 
                 ...filters, 
@@ -80,19 +74,17 @@ const BrowsePropertiesPage = () => {
                 page, 
                 limit: 12 
             };
-            if (roleListingFilter) {
-                queryParams.listingType = roleListingFilter;
+            if (user?.activeRole === 'BUYER') {
+                queryParams.listingType = 'SALE';
+            } else if (user?.activeRole === 'RENTAL_SEEKER') {
+                queryParams.listingType = 'RENT';
             }
             return propertyService.getAll(queryParams).then((r) => r.data);
         },
         placeholderData: (prev) => prev,
     });
 
-    const allowedListingTypes = LISTING_TYPES.filter((type) => {
-        if (user?.activeRole === ROLES.BUYER) return type.value === 'SALE';
-        if (user?.activeRole === ROLES.RENTAL_SEEKER) return type.value === 'RENT' || type.value === 'LEASE';
-        return true;
-    });
+    const allowedListingTypes = LISTING_TYPES;
 
     const properties = data?.properties || [];
     const totalPages = data?.totalPages || 1;
@@ -137,6 +129,10 @@ const BrowsePropertiesPage = () => {
         setShowHistory(false);
     };
 
+    const handleUnlock = useCallback((property) => {
+        navigate(`/properties/${property.id}`);
+    }, [navigate]);
+
     const loadMoreRef = useIntersectionObserver(
         useCallback(() => {
             if (page < totalPages && !isFetching) setPage((p) => p + 1);
@@ -159,7 +155,7 @@ const BrowsePropertiesPage = () => {
                         </div>
 
                         {/* Category filter tabs */}
-                        {(!user || (user.activeRole !== ROLES.BUYER && user.activeRole !== ROLES.RENTAL_SEEKER)) && (
+                        {user?.activeRole !== 'BUYER' && user?.activeRole !== 'RENTAL_SEEKER' && (
                             <div className="flex gap-4 border-b border-surface-border mb-6">
                                 <button
                                     onClick={() => updateListingTypeParam('')}
@@ -199,6 +195,8 @@ const BrowsePropertiesPage = () => {
                             <div className="flex-1 relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                                 <input
+                                    id="main-search-input"
+                                    name="search"
                                     type="text"
                                     placeholder="Search by title, city, or location..."
                                     value={localSearch}
@@ -300,12 +298,14 @@ const BrowsePropertiesPage = () => {
                                                 value={filters.propertyType}
                                                 onChange={(e) => { setFilter('propertyType', e.target.value); setPage(1); }}
                                             />
-                                            <Select
-                                                placeholder="Listing Type"
-                                                options={allowedListingTypes}
-                                                value={filters.listingType}
-                                                onChange={(e) => updateListingTypeParam(e.target.value)}
-                                            />
+                                            {user?.activeRole !== 'BUYER' && user?.activeRole !== 'RENTAL_SEEKER' && (
+                                                <Select
+                                                    placeholder="Listing Type"
+                                                    options={allowedListingTypes}
+                                                    value={filters.listingType}
+                                                    onChange={(e) => updateListingTypeParam(e.target.value)}
+                                                />
+                                            )}
                                             <Input
                                                 placeholder="Min Price"
                                                 type="number"
@@ -410,6 +410,7 @@ const BrowsePropertiesPage = () => {
                                             key={property.id}
                                             property={property}
                                             onCompare={(p) => addItem(p)}
+                                            onUnlock={handleUnlock}
                                         />
                                     ))}
                                 </div>

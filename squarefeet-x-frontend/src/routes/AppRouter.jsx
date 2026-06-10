@@ -7,8 +7,6 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { useInitAuth } from '../hooks';
 import ScrollToTop from '../components/common/ScrollToTop';
-import ApiConsole from '../components/common/ApiConsole';
-
 // Lazy imports
 const LandingPage = lazy(() => import('../pages/public/LandingPage'));
 const BrowsePropertiesPage = lazy(() => import('../pages/public/BrowsePropertiesPage'));
@@ -18,6 +16,7 @@ const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('../pages/auth/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage'));
 const BuyerDashboard = lazy(() => import('../pages/buyer/BuyerDashboard'));
 const SavedPropertiesPage = lazy(() => import('../pages/buyer/SavedPropertiesPage'));
 const ChatPage = lazy(() => import('../pages/buyer/ChatPage'));
@@ -50,7 +49,6 @@ const router = createBrowserRouter([
             <>
                 <ScrollToTop />
                 <Outlet />
-                <ApiConsole />
             </>
         ),
         children: [
@@ -89,6 +87,10 @@ const router = createBrowserRouter([
             {
                 path: '/register',
                 element: <SuspenseWrapper><RegisterPage /></SuspenseWrapper>,
+            },
+            {
+                path: '/verify-email',
+                element: <SuspenseWrapper><VerifyEmailPage /></SuspenseWrapper>,
             },
             {
                 path: '/forgot-password',

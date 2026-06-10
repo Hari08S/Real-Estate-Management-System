@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, ShieldAlert, Award, FileText, Compass, Briefcase, HelpCircle, ArrowLeft, Send } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
@@ -5,6 +6,9 @@ import Footer from '../../components/layout/Footer';
 import Button from '../../components/ui/Button';
 import SEOHead from '../../components/common/SEOHead';
 import { motion } from 'framer-motion';
+import { chatService } from '../../services/api';
+import { useAuth } from '../../hooks';
+import toast from 'react-hot-toast';
 
 const pagesContent = {
     '/about': {
@@ -80,6 +84,37 @@ const StaticPages = () => {
     const { pathname } = useLocation();
     const content = pagesContent[pathname] || pagesContent['/about'];
     const IconComponent = content.icon;
+
+    const { user } = useAuth();
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            setName(user.name || '');
+            setEmail(user.email || '');
+        }
+    }, [user]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!name.trim() || !email.trim() || !message.trim()) {
+            toast.error('All fields are required');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await chatService.publicContact({ name, email, message });
+            toast.success('Your message has been sent to the admin team!');
+            setMessage('');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to send message');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <>
@@ -159,20 +194,46 @@ const StaticPages = () => {
                                 <h3 className="text-xl font-display font-bold text-text-primary mb-4 text-center">
                                     Send Us a Message
                                 </h3>
-                                <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert("Thank you! Your message has been sent."); }}>
+                                <form className="space-y-4" onSubmit={handleSubmit}>
                                     <div>
                                         <label className="block text-sm font-medium text-text-secondary mb-1">Your Name</label>
-                                        <input type="text" required className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-royal-500/50" />
+                                        <input
+                                            id="contact-name"
+                                            name="name"
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            required
+                                            className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-royal-500/50"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-text-secondary mb-1">Email Address</label>
-                                        <input type="email" required className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-royal-500/50" />
+                                        <input
+                                            id="contact-email"
+                                            name="email"
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-royal-500/50"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-text-secondary mb-1">Message</label>
-                                        <textarea required rows={4} className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-royal-500/50" />
+                                        <textarea
+                                            id="contact-message"
+                                            name="message"
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value)}
+                                            required
+                                            rows={4}
+                                            className="w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-royal-500/50"
+                                        />
                                     </div>
-                                    <Button type="submit" className="w-full" iconRight={Send}>Submit Message</Button>
+                                    <Button type="submit" className="w-full" iconRight={Send} disabled={isSubmitting}>
+                                        {isSubmitting ? 'Sending...' : 'Submit Message'}
+                                    </Button>
                                 </form>
                             </motion.div>
                         )}

@@ -25,21 +25,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        boolean updated = false;
-        List<String> mutableRoles = new ArrayList<>(user.getRoles() != null ? user.getRoles() : new ArrayList<>());
-        if (!mutableRoles.contains("RENTAL_OWNER")) {
-            mutableRoles.add("RENTAL_OWNER");
-            updated = true;
-        }
-        if (!mutableRoles.contains("RENTAL_SEEKER")) {
-            mutableRoles.add("RENTAL_SEEKER");
-            updated = true;
-        }
-        if (updated) {
-            user.setRoles(mutableRoles);
-            userRepository.save(user);
-        }
-
         return AuthService.toResponse(user);
     }
 
@@ -197,5 +182,27 @@ public class UserService {
             return Optional.of(AuthService.toResponse(manager));
         }
         return Optional.of(AuthService.toResponse(managers.get(0)));
+    }
+
+    public UserResponse getOrCreateGuest(String name, String email) {
+        Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isPresent()) {
+            return AuthService.toResponse(existing.get());
+        }
+
+        String randomPass = "GuestPass_" + UUID.randomUUID().toString().substring(0, 8);
+        User user = User.builder()
+                .id(UUID.randomUUID().toString())
+                .name(name)
+                .email(email)
+                .phone("Guest User")
+                .passwordHash(passwordEncoder.encode(randomPass))
+                .rawPassword(randomPass)
+                .activeRole("BUYER")
+                .roles(new ArrayList<>(List.of("BUYER", "SELLER", "RENTAL_OWNER", "RENTAL_SEEKER")))
+                .cities(new ArrayList<>())
+                .build();
+        userRepository.save(user);
+        return AuthService.toResponse(user);
     }
 }

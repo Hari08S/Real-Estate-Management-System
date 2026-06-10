@@ -137,6 +137,65 @@ public class ChatController {
         return ResponseEntity.ok(dto);
     }
 
+    @PostMapping("/public/contact")
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<?> publicContact(@RequestBody Map<String, String> body) {
+        String name = body.get("name");
+        String email = body.get("email");
+        String message = body.get("message");
+
+        if (name == null || email == null || message == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Name, email and message are required"));
+        }
+
+        // 1. Get or create guest user from auth-service
+        String userId;
+        try {
+            Map<String, String> req = Map.of("name", name, "email", email);
+            Map<String, Object> guest = restTemplate.postForObject(
+                    authServiceUrl + "/api/users/internal/get-or-create-guest", req, Map.class);
+            if (guest == null || guest.get("id") == null) {
+                return ResponseEntity.status(500).body(Map.of("error", "Failed to resolve or create guest user"));
+            }
+            userId = (String) guest.get("id");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to resolve guest: " + e.getMessage()));
+        }
+
+        // 2. Fetch all users from auth-service to find the ADMIN
+        String adminId = null;
+        try {
+            List<Map<String, Object>> users = restTemplate.getForObject(
+                    authServiceUrl + "/api/users/internal/all", List.class);
+            if (users != null) {
+                for (Map<String, Object> u : users) {
+                    List<String> roles = (List<String>) u.get("roles");
+                    if (roles != null && roles.contains("ADMIN")) {
+                        adminId = (String) u.get("id");
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to resolve admin: " + e.getMessage()));
+        }
+
+        if (adminId == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Admin not found"));
+        }
+
+        // 3. Start/get conversation with ADMIN
+        Conversation conv = chatService.startConversation(
+                userId,
+                adminId,
+                "admin-support",
+                "Contact Us Inquiry",
+                "Contact Us message:\n\nName: " + name + "\nEmail: " + email + "\nMessage: " + message
+        );
+
+        return ResponseEntity.ok(Map.of("success", true, "conversationId", conv.getId()));
+    }
+
     @GetMapping("/conversations/{id}/messages")
     public ResponseEntity<?> getMessages(@PathVariable String id) {
         return ResponseEntity.ok(Map.of("messages", chatService.getMessages(id)));

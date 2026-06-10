@@ -60,6 +60,10 @@ public class Property {
     @org.springframework.data.annotation.Transient
     private Integer seekersPercent;
 
+    @org.springframework.data.annotation.Transient
+    @Builder.Default
+    private Boolean isUnlocked = false;
+
     @com.fasterxml.jackson.annotation.JsonProperty("buyerInterestRate")
     public Double getBuyerInterestRate() {
         if (views == null || views == 0) {

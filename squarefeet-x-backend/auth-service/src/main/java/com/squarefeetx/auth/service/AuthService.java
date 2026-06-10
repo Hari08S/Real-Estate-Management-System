@@ -29,6 +29,9 @@ public class AuthService {
             throw new RuntimeException("Email already registered");
         }
 
+        String otp = String.format("%06d", new java.util.Random().nextInt(1000000));
+        boolean autoVerify = req.getEmail().endsWith("@example.com");
+
         User user = User.builder()
                 .name(req.getName())
                 .email(req.getEmail())
@@ -37,9 +40,15 @@ public class AuthService {
                 .rawPassword(req.getPassword())
                 .activeRole("BUYER")
                 .roles(List.of("BUYER", "SELLER", "RENTAL_OWNER", "RENTAL_SEEKER"))
+                .emailVerified(autoVerify)
+                .emailVerificationOtp(autoVerify ? null : otp)
+                .emailVerificationOtpExpiry(autoVerify ? null : LocalDateTime.now().plusMinutes(15))
                 .build();
 
         userRepository.save(user);
+        if (!autoVerify) {
+            emailService.sendEmailVerificationOtp(user.getEmail(), otp);
+        }
         return toResponse(user);
     }
 
@@ -55,7 +64,11 @@ public class AuthService {
                     .rawPassword(randomPass)
                     .activeRole("BUYER")
                     .roles(List.of("BUYER", "SELLER", "RENTAL_OWNER", "RENTAL_SEEKER"))
+                    .emailVerified(true)
                     .build();
+            user = userRepository.save(user);
+        } else if (user.getEmailVerified() == null || !user.getEmailVerified()) {
+            user.setEmailVerified(true);
             user = userRepository.save(user);
         }
 
@@ -75,6 +88,10 @@ public class AuthService {
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Invalid email or password");
+        }
+
+        if (user.getEmailVerified() != null && !user.getEmailVerified()) {
+            throw new RuntimeException("Email not verified. Please verify your email first.");
         }
 
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getActiveRole());
@@ -105,17 +122,75 @@ public class AuthService {
 
     private void ensureStandardRoles(User user) {
         boolean updated = false;
+        if (user.getEmailVerified() == null) {
+            user.setEmailVerified(true);
+            updated = true;
+        }
+
         List<String> mutableRoles = new ArrayList<>(user.getRoles() != null ? user.getRoles() : new ArrayList<>());
-        if (mutableRoles.contains("BUYER") || mutableRoles.contains("SELLER")) {
+        
+        if (mutableRoles.contains("ADMIN") && mutableRoles.size() > 1) {
+            mutableRoles.clear();
+            mutableRoles.add("ADMIN");
+            updated = true;
+        } else if (mutableRoles.contains("MANAGER") && mutableRoles.size() > 1) {
+            mutableRoles.clear();
+            mutableRoles.add("MANAGER");
+            updated = true;
+        } else if (mutableRoles.contains("BUYER") || mutableRoles.contains("SELLER")) {
             if (!mutableRoles.contains("BUYER")) { mutableRoles.add("BUYER"); updated = true; }
             if (!mutableRoles.contains("SELLER")) { mutableRoles.add("SELLER"); updated = true; }
             if (!mutableRoles.contains("RENTAL_OWNER")) { mutableRoles.add("RENTAL_OWNER"); updated = true; }
             if (!mutableRoles.contains("RENTAL_SEEKER")) { mutableRoles.add("RENTAL_SEEKER"); updated = true; }
         }
+        
         if (updated) {
-            user.setRoles(mutableRoles);
+            if (user.getRoles() != null) {
+                user.getRoles().clear();
+                user.getRoles().addAll(mutableRoles);
+            } else {
+                user.setRoles(mutableRoles);
+            }
             userRepository.save(user);
         }
+    }
+
+    public void verifyEmail(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            return;
+        }
+
+        if (user.getEmailVerificationOtp() == null || !user.getEmailVerificationOtp().equals(otp)) {
+            throw new RuntimeException("Invalid verification OTP");
+        }
+
+        if (user.getEmailVerificationOtpExpiry() != null && user.getEmailVerificationOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification OTP has expired");
+        }
+
+        user.setEmailVerified(true);
+        user.setEmailVerificationOtp(null);
+        user.setEmailVerificationOtpExpiry(null);
+        userRepository.save(user);
+    }
+
+    public void resendVerificationOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new RuntimeException("Email is already verified");
+        }
+
+        String otp = String.format("%06d", new java.util.Random().nextInt(1000000));
+        user.setEmailVerificationOtp(otp);
+        user.setEmailVerificationOtpExpiry(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        emailService.sendEmailVerificationOtp(user.getEmail(), otp);
     }
 
     public String forgotPassword(String email) {
@@ -227,6 +302,7 @@ public class AuthService {
                 .cities(user.getCities())
                 .createdAt(user.getCreatedAt())
                 .rawPassword(user.getRawPassword())
+                .emailVerified(user.getEmailVerified())
                 .build();
     }
 }

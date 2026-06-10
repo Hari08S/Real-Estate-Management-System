@@ -27,7 +27,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/google",
                         "/api/auth/refresh-token", "/api/auth/forgot-password",
-                        "/api/auth/reset-password/**", "/api/users/internal/**",
+                        "/api/auth/reset-password/**", "/api/auth/verify-email",
+                        "/api/auth/resend-verification-otp", "/api/users/internal/**",
                         "/api/users/admin-info").permitAll()
                 .anyRequest().authenticated()
             )

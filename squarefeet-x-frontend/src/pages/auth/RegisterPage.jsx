@@ -36,8 +36,8 @@ const RegisterPage = () => {
         setIsLoading(true);
         try {
             await registerUser(data);
-            toast.success('Registration successful! Please login.');
-            navigate('/login');
+            toast.success('Registration successful! Verification OTP sent to your email.');
+            navigate(`/verify-email?email=${encodeURIComponent(data.email)}`);
         } catch (err) {
             toast.error(err.response?.data?.message || 'Registration failed');
         } finally {

@@ -19,6 +19,163 @@ public class PropertyService {
 
     private final PropertyRepository propertyRepository;
     private final SavedPropertyRepository savedPropertyRepository;
+    private final org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
+
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
+    private void populateSellerContact(Property property) {
+        if (property == null || property.getSellerId() == null) return;
+        try {
+            String authServiceUrl = "http://localhost:8003/api/users/internal/" + property.getSellerId();
+            org.springframework.http.ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    authServiceUrl,
+                    org.springframework.http.HttpMethod.GET,
+                    null,
+                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map<String, Object> userMap = response.getBody();
+                String name = (String) userMap.get("name");
+                String phone = (String) userMap.get("phone");
+                String email = (String) userMap.get("email");
+                property.setSellerContact(Property.SellerContact.builder()
+                        .name(name)
+                        .phone(phone)
+                        .email(email)
+                        .build());
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching seller details for id " + property.getSellerId() + ": " + e.getMessage());
+        }
+    }
+
+    private void populateSellerContacts(List<Property> properties) {
+        if (properties == null || properties.isEmpty()) return;
+        Set<String> sellerIds = properties.stream()
+                .map(Property::getSellerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        
+        Map<String, Property.SellerContact> contactMap = new HashMap<>();
+        for (String sellerId : sellerIds) {
+            try {
+                String authServiceUrl = "http://localhost:8003/api/users/internal/" + sellerId;
+                org.springframework.http.ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                        authServiceUrl,
+                        org.springframework.http.HttpMethod.GET,
+                        null,
+                        new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+                );
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    Map<String, Object> userMap = response.getBody();
+                    String name = (String) userMap.get("name");
+                    String phone = (String) userMap.get("phone");
+                    String email = (String) userMap.get("email");
+                    contactMap.put(sellerId, Property.SellerContact.builder()
+                            .name(name)
+                            .phone(phone)
+                            .email(email)
+                            .build());
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching seller details for id " + sellerId + ": " + e.getMessage());
+            }
+        }
+        
+        for (Property p : properties) {
+            if (p.getSellerId() != null && contactMap.containsKey(p.getSellerId())) {
+                p.setSellerContact(contactMap.get(p.getSellerId()));
+            }
+        }
+    }
+
+    private void populateUnlockStatus(Property property) {
+        if (property == null) return;
+        
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            property.setIsUnlocked(false);
+            return;
+        }
+        
+        String currentUserId = auth.getName();
+        
+        // 1. Is user the owner (seller)?
+        if (currentUserId.equals(property.getSellerId())) {
+            property.setIsUnlocked(true);
+            return;
+        }
+        
+        // 2. Is user Admin or Manager?
+        boolean isAdminOrManager = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> "ROLE_ADMIN".equals(role) || "ROLE_MANAGER".equals(role));
+        if (isAdminOrManager) {
+            property.setIsUnlocked(true);
+            return;
+        }
+        
+        // 3. Does a conversation exist containing this propertyId and currentUserId?
+        try {
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("propertyId").is(property.getId())
+                    .and("participants").in(currentUserId));
+            boolean hasConversation = mongoTemplate.exists(query, "conversations");
+            property.setIsUnlocked(hasConversation);
+        } catch (Exception e) {
+            System.err.println("Error checking unlock status for property " + property.getId() + ": " + e.getMessage());
+            property.setIsUnlocked(false);
+        }
+    }
+
+    private void populateUnlockStatuses(List<Property> properties) {
+        if (properties == null || properties.isEmpty()) return;
+        
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            for (Property p : properties) {
+                p.setIsUnlocked(false);
+            }
+            return;
+        }
+        
+        String currentUserId = auth.getName();
+        boolean isAdminOrManager = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> "ROLE_ADMIN".equals(role) || "ROLE_MANAGER".equals(role));
+        
+        if (isAdminOrManager) {
+            for (Property p : properties) {
+                p.setIsUnlocked(true);
+            }
+            return;
+        }
+        
+        // Query all conversation propertyIds for this user
+        Set<String> unlockedPropertyIds = new HashSet<>();
+        try {
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("participants").in(currentUserId));
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> convs = (List<Map<String, Object>>) (List<?>) mongoTemplate.find(query, Map.class, "conversations");
+            for (Map<String, Object> conv : convs) {
+                String pid = (String) conv.get("propertyId");
+                if (pid != null) {
+                    unlockedPropertyIds.add(pid);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching user conversations for unlock status: " + e.getMessage());
+        }
+        
+        for (Property p : properties) {
+            if (currentUserId.equals(p.getSellerId()) || unlockedPropertyIds.contains(p.getId())) {
+                p.setIsUnlocked(true);
+            } else {
+                p.setIsUnlocked(false);
+            }
+        }
+    }
 
     public Map<String, Object> getAllApproved(Map<String, String> params) {
         List<Property> properties = propertyRepository.findByStatus("APPROVED");
@@ -116,6 +273,8 @@ public class PropertyService {
                     .collect(Collectors.toList());
         }
 
+        populateSellerContacts(properties);
+        populateUnlockStatuses(properties);
         return Map.of("properties", properties, "total", properties.size());
     }
 
@@ -141,7 +300,16 @@ public class PropertyService {
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property not found"));
         property.setViews((property.getViews() != null ? property.getViews() : 0) + 1);
-        return propertyRepository.save(property);
+        Property saved = propertyRepository.save(property);
+        populateSellerContact(saved);
+        populateUnlockStatus(saved);
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            recordPropertyView(auth.getName(), id);
+        }
+
+        return saved;
     }
 
     public Property incrementUnlockCount(String id) {
@@ -163,7 +331,10 @@ public class PropertyService {
                 "DRAFT", LocalDateTime.now(),
                 "PENDING", LocalDateTime.now()
         ));
-        return propertyRepository.save(property);
+        Property saved = propertyRepository.save(property);
+        populateSellerContact(saved);
+        populateUnlockStatus(saved);
+        return saved;
     }
 
     public Property update(String id, Property updates, String userId) {
@@ -221,7 +392,10 @@ public class PropertyService {
             existing.setReviews(updates.getReviews());
         }
 
-        return propertyRepository.save(existing);
+        Property saved = propertyRepository.save(existing);
+        populateSellerContact(saved);
+        populateUnlockStatus(saved);
+        return saved;
     }
 
     public Property addReview(String id, Property.Review review, String buyerId, String buyerName) {
@@ -234,7 +408,10 @@ public class PropertyService {
             property.setReviews(new ArrayList<>());
         }
         property.getReviews().add(review);
-        return propertyRepository.save(property);
+        Property saved = propertyRepository.save(property);
+        populateSellerContact(saved);
+        populateUnlockStatus(saved);
+        return saved;
     }
 
     public void delete(String id, String userId) {
@@ -250,6 +427,8 @@ public class PropertyService {
 
     public Map<String, Object> getMyListings(String sellerId) {
         List<Property> properties = propertyRepository.findBySellerId(sellerId);
+        populateSellerContacts(properties);
+        populateUnlockStatuses(properties);
         Map<String, Object> stats = Map.of(
                 "totalListings", properties.size(),
                 "activeListings", properties.stream().filter(p -> "APPROVED".equals(p.getStatus())).count(),
@@ -262,11 +441,17 @@ public class PropertyService {
     // ── Internal endpoints for Manager/Admin services ──
 
     public List<Property> getByStatus(String status) {
-        return propertyRepository.findByStatus(status);
+        List<Property> properties = propertyRepository.findByStatus(status);
+        populateSellerContacts(properties);
+        populateUnlockStatuses(properties);
+        return properties;
     }
 
     public List<Property> getByStatusIn(List<String> statuses) {
-        return propertyRepository.findByStatusIn(statuses);
+        List<Property> properties = propertyRepository.findByStatusIn(statuses);
+        populateSellerContacts(properties);
+        populateUnlockStatuses(properties);
+        return properties;
     }
 
     public Property updateStatus(String id, String status, String reason) {
@@ -278,11 +463,17 @@ public class PropertyService {
         );
         timestamps.put(status, LocalDateTime.now());
         property.setStatusTimestamps(timestamps);
-        return propertyRepository.save(property);
+        Property saved = propertyRepository.save(property);
+        populateSellerContact(saved);
+        populateUnlockStatus(saved);
+        return saved;
     }
 
     public List<Property> getAll() {
-        return propertyRepository.findAll();
+        List<Property> properties = propertyRepository.findAll();
+        populateSellerContacts(properties);
+        populateUnlockStatuses(properties);
+        return properties;
     }
 
     public void deleteByAdmin(String id) {
@@ -294,11 +485,21 @@ public class PropertyService {
     }
 
     public List<Property> getSavedProperties(String userId) {
+        System.out.println("getSavedProperties called for userId: " + userId);
         List<SavedProperty> saved = savedPropertyRepository.findByUserId(userId);
+        if (saved == null) {
+            saved = Collections.emptyList();
+        }
+        System.out.println("Found saved properties count: " + saved.size());
+        saved.forEach(s -> System.out.println(" - SavedProperty: " + s.getPropertyId() + " for user: " + s.getUserId()));
         List<String> propertyIds = saved.stream().map(SavedProperty::getPropertyId).toList();
+        System.out.println("Property IDs to fetch: " + propertyIds);
         Iterable<Property> iterable = propertyRepository.findAllById(propertyIds);
         List<Property> list = new ArrayList<>();
         iterable.forEach(list::add);
+        System.out.println("Fetched properties count: " + list.size());
+        populateSellerContacts(list);
+        populateUnlockStatuses(list);
         return list;
     }
 
@@ -320,4 +521,73 @@ public class PropertyService {
     public long getSavedPropertiesCount(String userId) {
         return savedPropertyRepository.countByUserId(userId);
     }
+
+    private void recordPropertyView(String userId, String propertyId) {
+        if (userId == null || propertyId == null || "anonymousUser".equals(userId)) return;
+        try {
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("userId").is(userId)
+                    .and("propertyId").is(propertyId));
+            boolean exists = mongoTemplate.exists(query, "viewed_properties");
+            if (!exists) {
+                Map<String, Object> viewed = new HashMap<>();
+                viewed.put("userId", userId);
+                viewed.put("propertyId", propertyId);
+                viewed.put("viewedAt", LocalDateTime.now());
+                mongoTemplate.save(viewed, "viewed_properties");
+            }
+        } catch (Exception e) {
+            System.err.println("Error recording property view: " + e.getMessage());
+        }
+    }
+
+    public long getViewedPropertiesCount(String userId) {
+        if (userId == null || "anonymousUser".equals(userId)) return 0;
+        try {
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("userId").is(userId));
+            return mongoTemplate.count(query, "viewed_properties");
+        } catch (Exception e) {
+            System.err.println("Error counting viewed properties: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    public List<Property> getRecentlyViewedProperties(String userId, int limit) {
+        if (userId == null || "anonymousUser".equals(userId)) return List.of();
+        try {
+            org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query();
+            query.addCriteria(org.springframework.data.mongodb.core.query.Criteria.where("userId").is(userId));
+            query.with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "viewedAt"));
+            query.limit(limit);
+            List<?> list = mongoTemplate.find(query, Map.class, "viewed_properties");
+            List<String> propertyIds = list.stream()
+                    .map(m -> {
+                        if (m instanceof Map<?, ?> map) {
+                            return (String) map.get("propertyId");
+                        }
+                        return null;
+                    })
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .collect(java.util.stream.Collectors.toList());
+            if (propertyIds.isEmpty()) return List.of();
+            
+            // Fetch properties
+            List<Property> properties = propertyRepository.findAllById(propertyIds);
+            
+            // Map by ID for quick lookup and preserving order
+            Map<String, Property> propMap = properties.stream()
+                    .collect(java.util.stream.Collectors.toMap(Property::getId, p -> p, (p1, p2) -> p1));
+            
+            return propertyIds.stream()
+                    .map(propMap::get)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Error fetching recently viewed properties: " + e.getMessage());
+            return List.of();
+        }
+    }
 }
+

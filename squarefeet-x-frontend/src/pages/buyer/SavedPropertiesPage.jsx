@@ -1,7 +1,5 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
-import { useSavedStore } from '../../store/savedStore';
 import { propertyService } from '../../services/api';
 import { useAuth } from '../../hooks';
 import PropertyCard from '../../components/common/PropertyCard';
@@ -11,20 +9,21 @@ import { PropertyCardSkeleton } from '../../components/ui/Skeleton';
 
 const SavedPropertiesPage = () => {
     const { user } = useAuth();
-    const savedIds = useSavedStore((s) => s.savedIds);
-    const initForUser = useSavedStore((s) => s.initForUser);
-
-    useEffect(() => {
-        if (user?.id) initForUser(user.id);
-    }, [user?.id, initForUser]);
 
     const { data, isLoading } = useQuery({
-        queryKey: ['all-properties'],
-        queryFn: () => propertyService.getAll({}).then((r) => r.data),
+        queryKey: ['saved-properties', user?.id, user?.activeRole],
+        queryFn: () => propertyService.getSavedProperties().then((r) => r.data),
+        enabled: !!user?.id,
     });
 
-    const allProperties = data?.properties || [];
-    const savedProperties = allProperties.filter((p) => savedIds.includes(p.id));
+    const savedProperties = (data?.properties || []).filter((p) => {
+        if (user?.activeRole === 'BUYER') {
+            return p.listingType === 'SALE';
+        } else if (user?.activeRole === 'RENTAL_SEEKER') {
+            return p.listingType === 'RENT' || p.listingType === 'LEASE';
+        }
+        return true;
+    });
 
     return (
         <>

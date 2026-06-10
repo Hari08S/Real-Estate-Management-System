@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Mail, Phone, Shield, Camera, ArrowRightLeft, LogOut, Save, ChevronRight } from 'lucide-react';
 import { useAuth, useLogout } from '../../hooks';
 import { useAuthStore } from '../../store/authStore';
@@ -27,6 +27,24 @@ const ProfilePage = () => {
         name: user?.name || '',
         phone: user?.phone || '',
     });
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data } = await userService.getProfile();
+                if (data && data.user) {
+                    setUser(data.user);
+                    setFormData({
+                        name: data.user.name || '',
+                        phone: data.user.phone || '',
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile", error);
+            }
+        };
+        fetchProfile();
+    }, [setUser]);
 
     const handleSave = async () => {
         setIsSaving(true);

@@ -17,7 +17,7 @@ import { chatService } from '../../services/api';
 const sidebarMenus = {
     [ROLES.BUYER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=SALE', label: 'Buy Properties', icon: Search },
+        { to: '/properties', label: 'Browse Properties', icon: Search },
         { to: '/buyer/favorites', label: 'Favourite Properties', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Map', icon: Navigation },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
@@ -36,15 +36,14 @@ const sidebarMenus = {
     ],
     [ROLES.RENTAL_SEEKER]: [
         { to: '/buyer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=RENT', label: 'Rent Properties', icon: Search },
+        { to: '/properties', label: 'Browse Properties', icon: Search },
         { to: '/buyer/favorites', label: 'Favourite Properties', icon: Heart },
         { to: '/buyer/route-map', label: 'Route Map', icon: Navigation },
         { to: '/buyer/chat', label: 'Messages', icon: MessageSquare },
     ],
     [ROLES.MANAGER]: [
         { to: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=SALE', label: 'Buy Properties', icon: Search },
-        { to: '/properties?type=RENT', label: 'Rent Properties', icon: Search },
+        { to: '/properties', label: 'Browse Properties', icon: Search },
         { to: '/manager/listings?type=seller', label: 'Seller Properties', icon: List },
         { to: '/manager/listings?type=rent', label: 'Rent Properties', icon: List },
         { to: '/manager/unassigned', label: 'Unassigned Pool', icon: Building2 },
@@ -52,8 +51,7 @@ const sidebarMenus = {
     ],
     [ROLES.ADMIN]: [
         { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/properties?type=SALE', label: 'Buy Properties', icon: Search },
-        { to: '/properties?type=RENT', label: 'Rent Properties', icon: Search },
+        { to: '/properties', label: 'Browse Properties', icon: Search },
         { to: '/admin/favorites', label: 'Favourite Properties', icon: Heart },
         { to: '/admin/properties?type=sale', label: 'Seller Properties', icon: Building2 },
         { to: '/admin/properties?type=rent', label: 'Rent Properties', icon: Building2 },
@@ -94,7 +92,7 @@ const DashboardLayout = () => {
     return (
         <div className="min-h-screen bg-surface-dark flex flex-col">
             <Navbar />
-            <div className={`flex flex-1 ${showSidebar ? "pt-16" : ""}`}>
+            <div className={`flex flex-1 pt-16`}>
                 {/* Sidebar */}
                 {showSidebar && (
                     <aside className={`hidden lg:flex flex-col fixed top-16 left-0 bottom-0 z-30 bg-surface-card border-r border-surface-border transition-all duration-300 ${collapsed ? 'w-[72px]' : 'w-64'}`}>

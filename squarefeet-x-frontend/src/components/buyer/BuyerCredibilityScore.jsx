@@ -19,10 +19,10 @@ const getScoreColor = (score) => {
     return { text: 'text-red-400', bg: 'bg-red-500', label: 'Beginner', ring: 'stroke-red-400' };
 };
 
-export const BuyerCredibilityScore = ({ user, savedCount = 0, inquiryCount = 0 }) => {
+export const BuyerCredibilityScore = ({ user, savedCount = 0, inquiryCount = 0, precalculatedScore = null, precalculatedFactors = null }) => {
     // Calculate factor scores
     const profileComplete = [user?.name, user?.email, user?.phone].filter(Boolean).length;
-    const factors = {
+    const computedFactors = {
         profileComplete: Math.min(25, Math.round((profileComplete / 3) * 25)),
         phoneVerified: user?.phone ? 20 : 0,
         savedProperties: Math.min(20, savedCount * 4),
@@ -33,7 +33,8 @@ export const BuyerCredibilityScore = ({ user, savedCount = 0, inquiryCount = 0 }
             return Math.min(15, Math.round(months * 2));
         })(),
     };
-    const total = Object.values(factors).reduce((s, v) => s + v, 0);
+    const factors = precalculatedFactors || computedFactors;
+    const total = precalculatedScore !== null ? precalculatedScore : Object.values(factors).reduce((s, v) => s + v, 0);
     const { text, bg, label, ring } = getScoreColor(total);
 
     // SVG ring
@@ -41,12 +42,14 @@ export const BuyerCredibilityScore = ({ user, savedCount = 0, inquiryCount = 0 }
     const circumference = 2 * Math.PI * radius;
     const strokeDash = circumference - (total / 100) * circumference;
 
+    const isRentalSeeker = user?.activeRole === 'RENTAL_SEEKER';
+
     return (
         <div className="p-5 rounded-2xl bg-gradient-to-br from-surface-card to-surface-hover border border-surface-border">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
                     <Shield className="w-4 h-4 text-royal-400" />
-                    Buyer Credibility Score
+                    {isRentalSeeker ? 'Rental Seeker Credibility Score' : 'Buyer Credibility Score'}
                 </h3>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${bg}/20 ${text}`}>{label}</span>
             </div>
@@ -102,8 +105,8 @@ export const BuyerCredibilityScore = ({ user, savedCount = 0, inquiryCount = 0 }
                     <AlertCircle className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
                     <p className="text-[10px] text-amber-400">
                         {!user?.phone ? 'Add your phone number to boost your score. ' : ''}
-                        {savedCount < 3 ? 'Save more properties to show research activity. ' : ''}
-                        Higher score → sellers respond faster.
+                        {savedCount < 3 ? (isRentalSeeker ? 'Save more rentals to show research activity. ' : 'Save more properties to show research activity. ') : ''}
+                        Higher score → {isRentalSeeker ? 'owners' : 'sellers'} respond faster.
                     </p>
                 </div>
             )}
@@ -111,7 +114,7 @@ export const BuyerCredibilityScore = ({ user, savedCount = 0, inquiryCount = 0 }
                 <div className="mt-3 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
                     <p className="text-[10px] text-emerald-400">
-                        Great score! Sellers are more likely to respond to your inquiries quickly.
+                        Great score! {isRentalSeeker ? 'Owners' : 'Sellers'} are more likely to respond to your inquiries quickly.
                     </p>
                 </div>
             )}

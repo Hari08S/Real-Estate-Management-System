@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { classNames } from '../../utils';
 
@@ -8,18 +8,25 @@ const Select = forwardRef(({
     options = [],
     placeholder = 'Select...',
     className = '',
+    id,
+    name,
     ...props
 }, ref) => {
+    const generatedId = useId();
+    const selectId = id || generatedId;
+
     return (
         <div className="space-y-1.5">
             {label && (
-                <label className="block text-sm font-medium text-text-secondary">
+                <label htmlFor={selectId} className="block text-sm font-medium text-text-secondary">
                     {label}
                 </label>
             )}
             <div className="relative">
                 <select
                     ref={ref}
+                    id={selectId}
+                    name={name || selectId}
                     className={classNames(
                         'w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary',
                         'appearance-none cursor-pointer',

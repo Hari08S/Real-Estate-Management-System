@@ -58,4 +58,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
         return null;
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return "/api/chat/public/contact".equals(path);
+    }
 }

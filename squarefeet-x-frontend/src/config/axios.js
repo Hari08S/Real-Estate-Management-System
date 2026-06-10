@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { installMockInterceptor } from './mockInterceptor';
 import { useApiLogStore } from '../store/apiLogStore';
+import { useAuthStore } from '../store/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
 
@@ -105,8 +106,8 @@ api.interceptors.response.use(
             }
         }
 
-        // Skip 401 retry for auth endpoints to avoid infinite loops
-        const isAuthEndpoint = originalRequest?.url?.includes('/auth/');
+        // Skip 401 retry for specific auth endpoints to avoid infinite loops
+        const isAuthEndpoint = originalRequest?.url?.includes('/auth/') && !originalRequest?.url?.includes('/auth/me');
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
@@ -125,6 +126,8 @@ api.interceptors.response.use(
                 return api(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError);
+                useAuthStore.getState().logout();
+                window.location.href = '/login';
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

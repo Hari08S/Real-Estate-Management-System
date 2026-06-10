@@ -109,6 +109,35 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestBody Map<String, String> req) {
+        try {
+            String email = req.get("email");
+            String otp = req.get("otp");
+            if (email == null || otp == null) {
+                throw new RuntimeException("Email and OTP are required");
+            }
+            authService.verifyEmail(email, otp);
+            return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/resend-verification-otp")
+    public ResponseEntity<?> resendVerificationOtp(@RequestBody Map<String, String> req) {
+        try {
+            String email = req.get("email");
+            if (email == null) {
+                throw new RuntimeException("Email is required");
+            }
+            authService.resendVerificationOtp(email);
+            return ResponseEntity.ok(Map.of("message", "Verification OTP resent successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     private String extractCookie(HttpServletRequest request, String name) {
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {

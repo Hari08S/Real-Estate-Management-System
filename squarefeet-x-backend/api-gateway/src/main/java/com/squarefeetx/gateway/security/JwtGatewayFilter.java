@@ -27,9 +27,12 @@ public class JwtGatewayFilter extends OncePerRequestFilter {
         "/api/auth/refresh-token",
         "/api/auth/forgot-password",
         "/api/auth/reset-password/**",
+        "/api/auth/verify-email",
+        "/api/auth/resend-verification-otp",
         "/api/properties",
         "/api/properties/**",
-        "/api/manager/by-city"
+        "/api/manager/by-city",
+        "/api/chat/public/contact"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();

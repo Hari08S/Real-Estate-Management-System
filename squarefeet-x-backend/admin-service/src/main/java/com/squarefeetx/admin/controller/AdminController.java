@@ -28,33 +28,123 @@ public class AdminController {
 
     @GetMapping("/dashboard")
     public ResponseEntity<?> getDashboardStats() {
-        long totalProperties = fetchCount(propertyServiceUrl + "/api/properties/internal/count");
         long totalUsers = fetchCount(authServiceUrl + "/api/users/internal/count");
 
-        List<Map<String, Object>> monthlyData = List.of(
-                Map.of("month", "Sep", "listings", 12, "inquiries", 30),
-                Map.of("month", "Oct", "listings", 18, "inquiries", 45),
-                Map.of("month", "Nov", "listings", 25, "inquiries", 60),
-                Map.of("month", "Dec", "listings", 30, "inquiries", 80),
-                Map.of("month", "Jan", "listings", 38, "inquiries", 95),
-                Map.of("month", "Feb", "listings", 45, "inquiries", 120)
-        );
+        List<Map<String, Object>> props = fetchProperties(propertyServiceUrl + "/api/properties/internal/all");
+        long totalProperties = props.size();
 
-        List<Map<String, Object>> categoryData = List.of(
-                Map.of("name", "Apartments", "value", 45),
-                Map.of("name", "Villas", "value", 20),
-                Map.of("name", "Plots", "value", 15),
-                Map.of("name", "Commercial", "value", 12),
-                Map.of("name", "Others", "value", 8)
-        );
+        long totalInquiries = props.stream()
+                .mapToLong(p -> {
+                    Object unlockVal = p.get("unlockCount");
+                    if (unlockVal instanceof Number) {
+                        return ((Number) unlockVal).longValue();
+                    }
+                    return 0;
+                })
+                .sum();
+
+        // Calculate categoryData dynamically based on propertyType
+        Map<String, Integer> typeCounts = new HashMap<>();
+        for (Map<String, Object> p : props) {
+            String type = (String) p.get("propertyType");
+            if (type != null) {
+                String capitalized = type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
+                if (!capitalized.endsWith("s")) {
+                    capitalized += "s";
+                }
+                typeCounts.put(capitalized, typeCounts.getOrDefault(capitalized, 0) + 1);
+            }
+        }
+        List<Map<String, Object>> categoryData = new ArrayList<>();
+        if (totalProperties > 0) {
+            for (Map.Entry<String, Integer> entry : typeCounts.entrySet()) {
+                int percent = (int) Math.round((entry.getValue() * 100.0) / totalProperties);
+                categoryData.add(Map.of("name", entry.getKey(), "value", percent));
+            }
+        } else {
+            categoryData = List.of(
+                    Map.of("name", "Apartments", "value", 0),
+                    Map.of("name", "Villas", "value", 0),
+                    Map.of("name", "Plots", "value", 0),
+                    Map.of("name", "Commercial", "value", 0),
+                    Map.of("name", "Others", "value", 0)
+            );
+        }
+
+        // Calculate monthlyData dynamically for the last 6 months based on createdAt
+        String[] monthNames = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        Map<String, Integer> monthlyListings = new LinkedHashMap<>();
+        Map<String, Integer> monthlyInquiries = new LinkedHashMap<>();
+        
+        java.time.LocalDate now = java.time.LocalDate.now();
+        List<String> last6Months = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            java.time.LocalDate date = now.minusMonths(i);
+            String mName = monthNames[date.getMonthValue() - 1];
+            last6Months.add(mName);
+            monthlyListings.put(mName, 0);
+            monthlyInquiries.put(mName, 0);
+        }
+        
+        for (Map<String, Object> p : props) {
+            Object createdVal = p.get("createdAt");
+            if (createdVal != null) {
+                try {
+                    String dateStr = createdVal.toString();
+                    int monthIndex = -1;
+                    if (dateStr.contains("-")) {
+                        String[] parts = dateStr.split("-");
+                        if (parts.length >= 2) {
+                            monthIndex = Integer.parseInt(parts[1]) - 1;
+                        }
+                    }
+                    if (monthIndex >= 0 && monthIndex < 12) {
+                        String mName = monthNames[monthIndex];
+                        if (monthlyListings.containsKey(mName)) {
+                            monthlyListings.put(mName, monthlyListings.get(mName) + 1);
+                            
+                            long unlocks = 0;
+                            Object unlockVal = p.get("unlockCount");
+                            if (unlockVal instanceof Number) {
+                                unlocks = ((Number) unlockVal).longValue();
+                            }
+                            monthlyInquiries.put(mName, monthlyInquiries.get(mName) + (int)unlocks);
+                        }
+                    }
+                } catch (Exception e) {
+                    // skip
+                }
+            }
+        }
+        
+        List<Map<String, Object>> monthlyData = new ArrayList<>();
+        for (String mName : last6Months) {
+            monthlyData.add(Map.of(
+                "month", mName,
+                "listings", monthlyListings.get(mName),
+                "inquiries", monthlyInquiries.get(mName)
+            ));
+        }
 
         return ResponseEntity.ok(Map.of(
                 "totalProperties", totalProperties,
                 "totalUsers", totalUsers,
-                "totalInquiries", 89,
+                "totalInquiries", totalInquiries,
                 "monthlyData", monthlyData,
                 "categoryData", categoryData
         ));
+    }
+
+    private List<Map<String, Object>> fetchProperties(String url) {
+        try {
+            ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET, null,
+                    new ParameterizedTypeReference<>() {});
+            return resp.getBody() != null ? resp.getBody() : List.of();
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     @GetMapping("/users")
@@ -96,15 +186,58 @@ public class AdminController {
     }
 
     @GetMapping("/managers")
+    @SuppressWarnings("unchecked")
     public ResponseEntity<?> getManagers() {
         try {
             ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
                     authServiceUrl + "/api/users/internal/managers",
                     HttpMethod.GET, null,
                     new ParameterizedTypeReference<>() {});
-            return ResponseEntity.ok(Map.of("managers", resp.getBody() != null ? resp.getBody() : List.of()));
+            List<Map<String, Object>> managers = resp.getBody() != null ? resp.getBody() : List.of();
+
+            List<Map<String, Object>> properties = fetchProperties(propertyServiceUrl + "/api/properties/internal/all");
+
+            long totalActiveListings = 0;
+            int totalStatesCovered = 0;
+
+            List<Map<String, Object>> enrichedManagers = new ArrayList<>();
+            for (Map<String, Object> manager : managers) {
+                Map<String, Object> enriched = new HashMap<>(manager);
+                List<String> assignedCities = (List<String>) enriched.get("cities");
+                long activeCount = 0;
+                if (assignedCities != null && !assignedCities.isEmpty()) {
+                    totalStatesCovered += assignedCities.size();
+                    activeCount = properties.stream().filter(p -> {
+                        String status = (String) p.get("status");
+                        if ("DRAFT".equals(status) || "REJECTED".equals(status) || "SOLD".equals(status)) return false;
+                        Map<String, Object> loc = (Map<String, Object>) p.get("location");
+                        if (loc == null) return false;
+                        String pCity = loc.get("city") != null ? loc.get("city").toString().toLowerCase() : "";
+                        String pState = loc.get("state") != null ? loc.get("state").toString().toLowerCase() : "";
+                        return assignedCities.stream().anyMatch(c -> {
+                            String lowerCity = c.toLowerCase();
+                            return lowerCity.equals(pCity) || lowerCity.equals(pState);
+                        });
+                    }).count();
+                }
+                enriched.put("activeListings", activeCount);
+                totalActiveListings += activeCount;
+                enrichedManagers.add(enriched);
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "managers", enrichedManagers,
+                    "totalManagers", enrichedManagers.size(),
+                    "statesCovered", totalStatesCovered,
+                    "activeListings", totalActiveListings
+            ));
         } catch (Exception e) {
-            return ResponseEntity.ok(Map.of("managers", List.of()));
+            return ResponseEntity.ok(Map.of(
+                    "managers", List.of(),
+                    "totalManagers", 0,
+                    "statesCovered", 0,
+                    "activeListings", 0
+            ));
         }
     }
 

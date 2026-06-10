@@ -146,8 +146,12 @@ public class ManagerController {
     private boolean matchesCity(Map<String, Object> property, List<String> assignedCities) {
         if (assignedCities == null || assignedCities.isEmpty()) return false;
         Map<String, Object> loc = (Map<String, Object>) property.get("location");
-        if (loc == null || loc.get("state") == null) return false;
-        String pState = loc.get("state").toString().toLowerCase();
-        return assignedCities.stream().anyMatch(c -> c.toLowerCase().equals(pState));
+        if (loc == null) return false;
+        String pCity = loc.get("city") != null ? loc.get("city").toString().toLowerCase() : "";
+        String pState = loc.get("state") != null ? loc.get("state").toString().toLowerCase() : "";
+        return assignedCities.stream().anyMatch(c -> {
+            String lowerCity = c.toLowerCase();
+            return lowerCity.equals(pCity) || lowerCity.equals(pState);
+        });
     }
 }

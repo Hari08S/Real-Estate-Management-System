@@ -29,6 +29,7 @@ const Input = forwardRef(({
                 <input
                     ref={ref}
                     id={inputId}
+                    name={props.name || inputId}
                     type={type}
                     className={classNames(
                         'w-full bg-surface-card border border-surface-border rounded-xl px-4 py-2.5 text-sm text-text-primary',
